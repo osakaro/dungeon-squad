@@ -58,7 +58,6 @@ El nigromante **Malakar** ha despertado y su ejército de esqueletos invade el r
 
   El **Rey Esqueleto** aparece en las salas 10 y 20 de cada capítulo.
 - **Flechas en el borde de la pantalla** que señalan a los enemigos que no se ven; la del jefe es dorada.
-- **10 niveles** en 2 mundos (la mazmorra y el abismo), con jefe en los niveles 5 y 10.
 - Las **salas se generan al azar**: columnas, cajas y barriles que bloquean el paso y los disparos.
 - **Cartas de mejora** con rareza (común, rara, épica y legendaria), iconos dibujados y animaciones.
 - **Pantalla de inicio** con el logo y textos de historia con efecto máquina de escribir.
