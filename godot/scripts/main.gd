@@ -183,15 +183,13 @@ func load_level() -> void:
 	var count: int = (1 + level / 5) if boss else 3 + level
 	for i in count:
 		var r := randf()
-		var t := "slime"
+		var t := "skeleton"
 		if r < 0.22 + level * 0.02:
-			t = "crystal"
+			t = "skmage"
 		elif level > 2 and r < 0.38 + level * 0.03:
 			t = "brute"
-		elif level > 1 and r < 0.52:
-			t = "bat"
-		elif level > 1 and r < 0.8:
-			t = "skeleton"
+		elif level > 1 and r < 0.6:
+			t = "rogue"
 		spawn_enemy(t, arena.random_spawn(player.global_position, 5.0), i * 0.12)
 	state = "play"
 	Sfx.set_intense(boss)

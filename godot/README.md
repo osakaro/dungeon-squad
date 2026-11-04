@@ -23,13 +23,12 @@ Las **habilidades se lanzan solas** cuando termina su cooldown.
 ## ✨ Qué incluye
 
 - **5 héroes animados** (correr, atacar, lanzar hechizos, morir…) con arma, ataque y 2 habilidades propias: Arquero, Mago, Guerrero, Asesino y Nigromante (un mago esqueleto).
-- **6 tipos de enemigo:**
-  - **Slime:** salta hacia ti.
-  - **Murciélago:** vuela en zigzag.
-  - **Cristal:** torreta que dispara.
-  - **Esqueleto:** sale del suelo y te persigue con su espada.
+- **5 tipos de enemigo**, todos modelos 3D animados que salen del suelo:
+  - **Esqueleto guerrero:** te persigue con su espada.
+  - **Esqueleto pícaro:** muy rápido, ataca en zigzag con dos espadas.
+  - **Esqueleto hechicero:** lanza proyectiles mágicos y se aleja si te acercas.
   - **Bárbaro:** carga contra ti con su hacha tras avisar en rojo.
-  - **Rey Esqueleto:** jefe con 3 patrones de ataque, invoca esqueletos y se enfurece a mitad de vida.
+  - **Rey Esqueleto (jefe):** 3 patrones de ataque, invoca esqueletos y se enfurece a mitad de vida.
 - **10 niveles** en 2 mundos (la mazmorra y el abismo), con jefe en los niveles 5 y 10.
 - Las **salas se generan al azar**: columnas, cajas y barriles que bloquean el paso y los disparos.
 - **Cartas de mejora** entre niveles: pasivas, desbloquear o subir habilidades.

@@ -76,50 +76,23 @@ static func _hand_light(c: CharModel, col: Color) -> void:
 static func enemy(type: String) -> Rig:
 	var r: Rig
 	match type:
-		"slime":
-			r = Rig.new()
-			r.bob_node = r.pivot(Vector3.ZERO)
-			var m := r.mat(Color(0.3, 0.9, 0.45, 0.78), 0.1)
-			m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-			m.rim_enabled = true
-			var b := r.part(Rig.sphere(0.45, 20), m, Vector3(0, 0.34, 0), r.bob_node)
-			b.scale = Vector3(1, 0.75, 1)
-			r.part(Rig.sphere(0.2, 12), r.mat(Color(0.1, 0.5, 0.2)), Vector3(0, 0.3, 0), r.bob_node)
-			for x in [-0.15, 0.15]:
-				r.part(Rig.sphere(0.08, 8), r.mat(Color(0.05, 0.05, 0.05), 0.1), Vector3(x, 0.45, 0.35), r.bob_node)
-				r.part(Rig.sphere(0.025, 6), Rig.glow_mat(Color.WHITE, 1.0), Vector3(x + 0.03, 0.48, 0.42), r.bob_node)
-		"bat":
-			r = Rig.new()
-			r.bob_node = r.pivot(Vector3(0, 1.2, 0))
-			var bm := r.mat(Color(0.25, 0.12, 0.3))
-			r.part(Rig.sphere(0.24, 12), bm, Vector3.ZERO, r.bob_node)
-			for x in [-0.09, 0.09]:
-				r.part(Rig.sphere(0.04, 6), Rig.glow_mat(Color(1, 0.2, 0.2), 6.0), Vector3(x, 0.05, 0.2), r.bob_node)
-				var ear := _cone(r, 0.06, 0.18, bm, Vector3(x, 0.24, 0), r.bob_node)
-				ear.rotation.z = -x * 3.0
-			r.wing_l = r.pivot(Vector3(-0.18, 0.05, 0), r.bob_node)
-			r.wing_r = r.pivot(Vector3(0.18, 0.05, 0), r.bob_node)
-			var wm := r.mat(Color(0.18, 0.08, 0.22))
-			r.part(Rig.box(0.6, 0.03, 0.34), wm, Vector3(-0.3, 0, 0), r.wing_l)
-			r.part(Rig.box(0.6, 0.03, 0.34), wm, Vector3(0.3, 0, 0), r.wing_r)
-		"crystal":
-			r = Rig.new()
-			var stone := r.mat(Color(0.35, 0.34, 0.38))
-			r.part(Rig.cyl(0.38, 0.48, 0.35, 8), stone, Vector3(0, 0.17, 0))
-			r.bob_node = r.pivot(Vector3(0, 1.0, 0))
-			var cm := r.mat(Color(0.7, 0.3, 1.0), 0.15, 0.3)
-			cm.emission_enabled = true
-			cm.emission = Color(0.55, 0.15, 0.9)
-			cm.emission_energy_multiplier = 1.4
-			var c := r.part(Rig.sphere(0.42, 4), cm, Vector3.ZERO, r.bob_node)
-			c.scale = Vector3(0.8, 1.4, 0.8)
-			for i in 3:
-				var a := i * TAU / 3.0
-				r.part(Rig.sphere(0.1, 4), cm, Vector3(cos(a) * 0.6, 0.1, sin(a) * 0.6), r.bob_node)
-			var l := OmniLight3D.new()
-			l.light_color = Color(0.7, 0.3, 1.0)
-			l.omni_range = 3.0
-			r.bob_node.add_child(l)
+		"rogue":
+			var rg := CharModel.create("Skeleton_Rogue", 1.6, [], {"anim_run": "Running_A", "anim_attack": "Dualwield_Melee_Attack_Slice",
+				"anim_spawn": "Spawn_Ground_Skeletons", "anim_death": "Death_C_Skeletons", "run_speed_ref": 4.5})
+			rg.attach("Skeleton_Blade")
+			rg.attach("Skeleton_Blade", "handslot.l")
+			return rg
+		"skmage":
+			var mg := CharModel.create("Skeleton_Mage", 1.7, [], {"anim_run": "Walking_D_Skeletons", "anim_attack": "Spellcast_Shoot",
+				"anim_spawn": "Spawn_Ground_Skeletons", "anim_death": "Death_C_Skeletons", "run_speed_ref": 1.5})
+			mg.attach("Skeleton_Staff")
+			var ml := OmniLight3D.new()
+			ml.light_color = Color(0.75, 0.3, 1.0)
+			ml.light_energy = 1.6
+			ml.omni_range = 3.5
+			ml.position = Vector3(0, 1.4, 0.5)
+			mg.add_child(ml)
+			return mg
 		"brute":
 			return CharModel.create("Barbarian", 2.3, ["1H_Axe_Offhand", "Barbarian_Round_Shield", "1H_Axe", "Mug"],
 				{"anim_attack": "2H_Melee_Attack_Chop", "anim_cast": "2H_Melee_Attack_Spin", "run_speed_ref": 3.0})

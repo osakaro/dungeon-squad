@@ -1,18 +1,17 @@
 extends CharacterBody3D
-## Enemigos: slime, murciélago, cristal, orco (bruto) y demonio (jefe).
+## Enemigos: esqueleto guerrero, esqueleto pícaro, esqueleto hechicero, bárbaro y Rey Esqueleto (jefe).
 
 # tipo: [radio, vida, velocidad, daño, monedas, altura barra]
 const STATS := {
-	"slime": [0.45, 30.0, 2.6, 10.0, 3, 1.3],
-	"bat": [0.35, 16.0, 4.4, 7.0, 3, 1.9],
-	"crystal": [0.5, 26.0, 0.0, 9.0, 4, 2.0],
+	"rogue": [0.38, 20.0, 4.3, 8.0, 3, 2.1],
+	"skmage": [0.4, 28.0, 1.2, 9.0, 4, 2.2],
 	"brute": [0.6, 95.0, 1.7, 18.0, 9, 3.0],
 	"boss": [1.1, 650.0, 1.4, 25.0, 60, 4.8],
 	"skeleton": [0.4, 40.0, 2.5, 12.0, 4, 2.1],
 }
 
 var main
-var type := "slime"
+var type := "skeleton"
 var radius := 0.45
 var hp := 30.0
 var max_hp := 30.0
@@ -138,20 +137,18 @@ func _physics_process(delta: float) -> void:
 	var sm := 0.4 if slow > 0.0 else 1.0
 	var face := dir
 	match type:
-		"slime":
+		"skeleton":
 			velocity = dir * speed * sm
-			var b: float = abs(sin(t * 6.0))
-			rig.bob_node.position.y = b * 0.3
-			rig.bob_node.scale = Vector3(1.0 + (1.0 - b) * 0.15, 0.85 + b * 0.2, 1.0 + (1.0 - b) * 0.15)
-		"bat":
+		"rogue":
 			var side := Vector3(-dir.z, 0, dir.x) * sin(t * 3.0) * 1.2
 			velocity = (dir + side).normalized() * speed * sm
-			rig.bob_node.position.y = 1.2 + sin(t * 5.0) * 0.2
-		"crystal":
+			face = velocity.normalized()
+		"skmage":
 			velocity = Vector3.ZERO
-			rig.bob_node.rotation.y += delta * 2.0
-			rig.bob_node.position.y = 1.0 + sin(t * 3.0) * 0.15
+			if d < 4.0:
+				velocity = -dir * speed * sm
 			if t > 2.4 / sm:
+				rig.attack()
 				t = 0.0
 				var shots := 3 if main.level > 3 else 1
 				for i in shots:
@@ -227,7 +224,7 @@ func _physics_process(delta: float) -> void:
 	move_and_slide()
 	global_position.y = 0
 	rig.rotation.y = lerp_angle(rig.rotation.y, atan2(face.x, face.z), delta * 10.0)
-	if type != "crystal":
+	if true:
 		rig.animate(delta, velocity.length())
 	if d < radius + 0.45 and hit_cd <= 0.0:
 		hit_cd = 0.8
@@ -252,7 +249,7 @@ func hurt(amount: float, force_crit := false) -> void:
 	FX.number(global_position + Vector3.UP * (1.5 if type == "boss" else 0.0), amount, Color(1, 0.85, 0.2) if crit else Color.WHITE, crit)
 	if p:
 		p.on_hit()
-		if type != "boss" and type != "crystal":
+		if type != "boss" and type != "skmage":
 			var away: Vector3 = global_position - p.global_position
 			away.y = 0
 			knock = away.normalized() * (4.0 if crit else 2.0)
@@ -264,7 +261,7 @@ func die() -> void:
 		return
 	dead = true
 	remove_from_group("enemies")
-	var c: Color = {"slime": Color(0.3, 0.9, 0.45), "bat": Color(0.5, 0.2, 0.6), "crystal": Color(0.7, 0.3, 1),
+	var c: Color = {"rogue": Color(0.6, 0.3, 0.9), "skmage": Color(0.7, 0.3, 1),
 		"brute": Color(0.5, 0.35, 0.2), "boss": Color(0.4, 0.8, 1.0), "skeleton": Color(0.9, 0.9, 0.8)}[type]
 	FX.burst(global_position + Vector3.UP * 0.6, c, 60 if type == "boss" else 22, 6.0 if type == "boss" else 4.5, 0.1, 0.8)
 	if type == "boss":
