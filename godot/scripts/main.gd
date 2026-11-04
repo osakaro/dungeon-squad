@@ -32,6 +32,9 @@ var level_time := 0.0
 
 func _ready() -> void:
 	randomize()
+	# en móviles/tablets la interfaz se ve más grande
+	if DisplayServer.is_touchscreen_available():
+		get_window().content_scale_size = Vector2i(1100, 600)
 	FX.root = self
 	_build_env()
 	arena = Arena.new()
