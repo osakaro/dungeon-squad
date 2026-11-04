@@ -1,5 +1,9 @@
 # ⚔️ DungeonSquad
 
+> 🆕 **Versión Godot 4** con gráficos mejorados en la carpeta [`godot/`](godot/). Consulta [su README](godot/README.md).
+
+![Godot](docs/godot-jefe.png)
+
 Juego de acción 3D por niveles para el navegador. Elige un héroe, limpia salas llenas de monstruos y mejora sus armas y habilidades.
 
 ![Menú](docs/menu.png)
