@@ -73,7 +73,41 @@ static func _hand_light(c: CharModel, col: Color) -> void:
 	l.position = Vector3(0, 0.6, 0)
 	ba.add_child(l)
 
-static func enemy(type: String) -> Rig:
+const QDIR := "res://assets/quaternius/"
+const QANIMS := {
+	"blob": {"anim_idle": "Idle", "anim_run": "Walk", "anim_attack": "Bite_Front", "anim_cast": "Yes", "anim_hit": "HitRecieve", "anim_death": "Death", "run_speed_ref": 2.5},
+	"fly": {"anim_idle": "Flying_Idle", "anim_run": "Fast_Flying", "anim_attack": "Headbutt", "anim_cast": "Punch", "anim_hit": "HitReact", "anim_death": "Death", "run_speed_ref": 4.0},
+	"big": {"anim_idle": "Idle", "anim_run": "Run", "anim_attack": "Punch", "anim_cast": "Weapon", "anim_hit": "HitReact", "anim_death": "Death", "run_speed_ref": 2.5},
+}
+## Monstruos distintos según el bioma: [modelo, altura, tipo de animaciones]
+const BIOME_MONSTERS := {
+	"forest": {"skeleton": ["Mushnub", 1.0, "blob"], "rogue": ["Hywirl", 1.5, "fly"], "skmage": ["Cactoro", 1.7, "big"],
+		"brute": ["Dino", 1.9, "big"], "champion": ["Dino", 3.6, "big"], "final": ["MushroomKing", 4.4, "big"]},
+	"ice": {"rogue": ["Ghost", 1.5, "fly"], "final": ["BlueDemon", 4.6, "big"]},
+	"lava": {"brute": ["Demon", 2.2, "big"], "champion": ["Demon", 3.8, "big"]},
+}
+
+static func enemy(type: String, biome := "") -> Rig:
+	var bm: Dictionary = BIOME_MONSTERS.get(biome, {})
+	if bm.has(type):
+		var d: Array = bm[type]
+		return CharModel.create(QDIR + d[0] + ".gltf", d[1], [], QANIMS[d[2]])
+	if biome == "lava" and type == "skeleton":
+		var sw := CharModel.create("Skeleton_Warrior", 1.75, [], {"anim_run": "Running_B", "anim_attack": "1H_Melee_Attack_Chop",
+			"anim_spawn": "Spawn_Ground_Skeletons", "anim_death": "Death_C_Skeletons", "run_speed_ref": 3.0})
+		sw.attach("Skeleton_Axe")
+		return sw
+	if type == "final":
+		var mk := CharModel.create("Skeleton_Mage", 4.4, [], {"anim_attack": "Spellcast_Shoot", "anim_cast": "Spellcast_Raise",
+			"anim_run": "Walking_D_Skeletons", "anim_death": "Death_C_Skeletons", "run_speed_ref": 1.4})
+		mk.attach("Skeleton_Staff")
+		var l := OmniLight3D.new()
+		l.light_color = Color(0.75, 0.2, 1.0)
+		l.light_energy = 3.0
+		l.omni_range = 7.0
+		l.position = Vector3(0, 3.5, 0.8)
+		mk.add_child(l)
+		return mk
 	var r: Rig
 	match type:
 		"rogue":

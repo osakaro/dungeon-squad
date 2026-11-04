@@ -83,34 +83,31 @@ func seq(notes: Array, step: float, wave := 3, vol := 0.35) -> AudioStreamWAV:
 	return mix(parts)
 
 func _make_sounds() -> void:
-	sounds["arrow"] = tone(0.1, 900, 400, 0, 0.18, 0.5, 0.004, 0.25)
-	sounds["fire"] = mix([tone(0.3, 300, 120, 2, 0.25, 0.6, 0.01, 0.2), tone(0.2, 600, 200, 0, 0.2)])
-	sounds["dagger"] = tone(0.08, 1200, 600, 0, 0.15, 0.6, 0.003, 0.3)
-	sounds["bolt"] = mix([tone(0.25, 900, 300, 3, 0.25), tone(0.25, 1350, 450, 0, 0.12)])
-	sounds["slash"] = tone(0.14, 700, 250, 0, 0.25, 0.7, 0.004, 0.18)
-	sounds["wave"] = tone(0.3, 500, 150, 2, 0.25, 0.5, 0.01, 0.3)
-	sounds["hit"] = tone(0.07, 160, 90, 0, 0.35, 0.15, 0.002, 0.2)
-	sounds["crit"] = mix([tone(0.09, 180, 90, 0, 0.35, 0.15, 0.002, 0.2), tone(0.18, 1320, 1300, 0, 0.08)])
-	sounds["kill"] = mix([tone(0.18, 220, 90, 0, 0.3, 0.3, 0.004, 0.15), tone(0.12, 520, 700, 3, 0.08)])
-	sounds["boom"] = mix([tone(0.5, 110, 35, 0, 0.45), tone(0.4, 1, 1, 0, 0.25, 1.0, 0.004, 0.05)])
-	sounds["eshot"] = tone(0.18, 700, 250, 3, 0.18)
-	sounds["hurt"] = mix([tone(0.22, 260, 90, 1, 0.3), tone(0.15, 1, 1, 0, 0.3, 1.0, 0.001, 0.2)])
-	sounds["coin"] = seq([1976.0, 2637.0], 0.06, 0, 0.25)
-	sounds["cast"] = mix([tone(0.4, 300, 1200, 3, 0.25), tone(0.4, 450, 1800, 0, 0.12)])
-	sounds["ice"] = mix([tone(0.5, 2400, 800, 0, 0.18, 0.4, 0.005, 0.9), tone(0.5, 1200, 400, 3, 0.2)])
-	sounds["shout"] = mix([tone(0.5, 140, 110, 2, 0.35, 0.2, 0.02, 0.3), tone(0.5, 210, 160, 1, 0.12)])
-	sounds["summon"] = mix([tone(0.6, 120, 300, 2, 0.3, 0.3, 0.05, 0.2), tone(0.6, 240, 600, 3, 0.15)])
-	sounds["drain"] = tone(0.5, 900, 300, 3, 0.25)
-	sounds["teleport"] = mix([tone(0.25, 200, 1600, 0, 0.25), tone(0.25, 1, 1, 0, 0.15, 1.0, 0.01, 0.6)])
-	sounds["spawn"] = tone(0.4, 80, 220, 2, 0.15, 0.5, 0.1, 0.15)
-	sounds["roar"] = mix([tone(0.9, 90, 55, 2, 0.4, 0.4, 0.05, 0.15), tone(0.9, 135, 80, 1, 0.12)])
-	sounds["portal"] = seq([523.0, 659.0, 784.0, 1047.0, 1319.0], 0.08, 3, 0.25)
-	sounds["level"] = seq([392.0, 523.0, 659.0], 0.1, 1, 0.12)
-	sounds["pick"] = seq([659.0, 880.0, 1319.0], 0.06, 3, 0.3)
-	sounds["click"] = tone(0.05, 1200, 900, 3, 0.25)
-	sounds["death"] = seq([440.0, 349.0, 294.0, 220.0], 0.18, 2, 0.18)
-	sounds["win"] = seq([523.0, 659.0, 784.0, 1047.0, 784.0, 1047.0, 1319.0], 0.12, 3, 0.3)
-	sounds["upgrade"] = seq([784.0, 988.0, 1175.0, 1568.0], 0.07, 0, 0.25)
+	# Sintetizados (suaves, basados en ruido filtrado para que no suenen a máquina recreativa)
+	sounds["arrow"] = tone(0.14, 500, 300, 0, 0.16, 0.85, 0.01, 0.18)
+	sounds["fire"] = tone(0.35, 200, 120, 0, 0.22, 0.9, 0.03, 0.08)
+	sounds["bolt"] = tone(0.3, 300, 200, 0, 0.18, 0.85, 0.02, 0.12)
+	sounds["wave"] = tone(0.3, 200, 100, 0, 0.22, 0.85, 0.02, 0.1)
+	sounds["eshot"] = tone(0.2, 300, 200, 0, 0.12, 0.85, 0.02, 0.12)
+	sounds["boom"] = mix([tone(0.6, 90, 35, 0, 0.45), tone(0.5, 1, 1, 0, 0.3, 1.0, 0.004, 0.04)])
+	sounds["hurt"] = mix([tone(0.18, 120, 70, 0, 0.4), tone(0.12, 1, 1, 0, 0.2, 1.0, 0.002, 0.1)])
+	sounds["cast"] = tone(0.5, 300, 600, 0, 0.18, 0.8, 0.12, 0.1)
+	sounds["ice"] = mix([tone(0.6, 1, 1, 0, 0.22, 1.0, 0.01, 0.5), tone(0.5, 90, 60, 0, 0.2)])
+	sounds["shout"] = mix([tone(0.6, 110, 90, 2, 0.25, 0.5, 0.05, 0.15), tone(0.6, 1, 1, 0, 0.15, 1.0, 0.05, 0.1)])
+	sounds["summon"] = tone(0.8, 80, 140, 0, 0.3, 0.7, 0.2, 0.06)
+	sounds["drain"] = tone(0.6, 200, 120, 3, 0.18, 0.6, 0.1, 0.1)
+	sounds["teleport"] = tone(0.3, 400, 900, 0, 0.18, 0.85, 0.02, 0.3)
+	sounds["spawn"] = tone(0.5, 60, 120, 0, 0.18, 0.8, 0.15, 0.05)
+	sounds["roar"] = mix([tone(1.0, 80, 50, 2, 0.35, 0.5, 0.08, 0.1), tone(1.0, 1, 1, 0, 0.2, 1.0, 0.1, 0.05)])
+	# Grabados (Kenney, CC0)
+	var files := {"hit": "chop.ogg", "crit": "metalLatch.ogg", "slash": "knifeSlice.ogg", "dagger": "knifeSlice.ogg",
+		"kill": "chop.ogg", "coin": "handleCoins.ogg", "step": "footstep00.ogg", "click": "click_002.wav",
+		"pick": "confirmation_002.wav", "portal": "maximize_006.wav", "level": "glass_002.wav", "win": "confirmation_002.wav",
+		"death": "error_004.wav", "upgrade": "select_006.wav"}
+	for k in files:
+		var path: String = "res://assets/sfx/" + files[k]
+		if ResourceLoader.exists(path):
+			sounds[k] = load(path)
 
 const MIN_GAP := {"hit": 110, "crit": 110, "kill": 90, "arrow": 90, "dagger": 90, "slash": 90, "fire": 90, "bolt": 90,
 	"eshot": 140, "coin": 70, "boom": 120, "wave": 120}

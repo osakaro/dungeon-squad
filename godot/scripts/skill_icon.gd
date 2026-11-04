@@ -12,6 +12,7 @@ func _init(k := "", c := Color.WHITE) -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 
 func setup(k: String, c: Color) -> void:
+	tex = null
 	key = k
 	color = c
 	queue_redraw()
@@ -80,7 +81,15 @@ func _star(c: Vector2, r1: float, r2: float, n: int, rot := 0.0) -> void:
 		pts.append(c + Vector2(cos(a), sin(a)) * (r1 if i % 2 == 0 else r2))
 	_poly(pts)
 
+var tex: Texture2D
+
 func _draw() -> void:
+	if tex == null and ResourceLoader.exists("res://assets/icons/%s.svg" % key):
+		tex = load("res://assets/icons/%s.svg" % key)
+	if tex:
+		draw_texture_rect(tex, Rect2(Vector2(0, size.y * 0.04), size), false, Color(0, 0, 0, 0.45))
+		draw_texture_rect(tex, Rect2(Vector2.ZERO, size), false, color)
+		return
 	for p in 2:
 		_pass = p
 		_draw_icon()

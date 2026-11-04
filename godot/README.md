@@ -48,12 +48,16 @@ El nigromante **Malakar** ha despertado y su ejército de esqueletos invade el r
 ## ✨ Qué incluye
 
 - **5 héroes animados** (correr, atacar, lanzar hechizos, morir…) con arma, ataque y 2 habilidades propias: Arquero, Mago, Guerrero, Asesino y Nigromante (un mago esqueleto).
-- **5 tipos de enemigo**, todos modelos 3D animados que salen del suelo:
-  - **Esqueleto guerrero:** te persigue con su espada.
-  - **Esqueleto pícaro:** muy rápido, ataca en zigzag con dos espadas.
-  - **Esqueleto hechicero:** lanza proyectiles mágicos y se aleja si te acercas.
-  - **Bárbaro:** carga contra ti con su hacha tras avisar en rojo.
-  - **Rey Esqueleto (jefe):** 3 patrones de ataque, invoca esqueletos y se enfurece a mitad de vida.
+- **Monstruos distintos en cada zona**, todos animados:
+
+  | Zona | Monstruos | Campeón | Jefe final |
+  |---|---|---|---|
+  | 🌲 Bosque | Setas saltarinas, remolinos voladores, cactus que disparan espinas, dinosaurios que cargan | Dino Salvaje | Rey Champiñón |
+  | ❄️ Hielo | Esqueletos, fantasmas, hechiceros esqueleto, bárbaros | Bárbaro de las Nieves | Demonio Azul (Rey Escarcha) |
+  | 🌋 Volcán | Guerreros esqueleto con hacha, pícaros esqueleto, hechiceros, demonios | Demonio de Fuego | Malakar |
+
+  El **Rey Esqueleto** aparece en las salas 10 y 20 de cada capítulo.
+- **Flechas en el borde de la pantalla** que señalan a los enemigos que no se ven; la del jefe es dorada.
 - **10 niveles** en 2 mundos (la mazmorra y el abismo), con jefe en los niveles 5 y 10.
 - Las **salas se generan al azar**: columnas, cajas y barriles que bloquean el paso y los disparos.
 - **Cartas de mejora** con rareza (común, rara, épica y legendaria), iconos dibujados y animaciones.
@@ -116,6 +120,9 @@ godot/
 
 ## 🙏 Créditos
 
+- Monstruos: **Ultimate Monsters**, de [Quaternius](https://quaternius.com), con licencia CC0.
+- Iconos de habilidades: [game-icons.net](https://game-icons.net) (Lorc, Delapouite y otros), con licencia **CC BY 3.0**.
+- Sonidos: **Kenney RPG Audio** y **Kenney Interface Sounds**, con licencia CC0.
 - Fuentes: **Fredoka** y **Lilita One** (Google Fonts, SIL Open Font License).
 
 - Modelos y animaciones: **KayKit Adventurers** y **KayKit Skeletons**, de [Kay Lousberg](https://www.kaylousberg.com), con licencia CC0. Las licencias están en `assets/kaykit/`.

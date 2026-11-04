@@ -1,0 +1,2 @@
+chop, knifeSlice, handleCoins, metalLatch, footstep00: Kenney RPG Audio (CC0) - https://kenney.nl/assets/rpg-audio
+*.wav: Kenney Interface Sounds (CC0) - https://kenney.nl/assets/interface-sounds

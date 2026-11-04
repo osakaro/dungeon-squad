@@ -4,7 +4,7 @@ extends Rig
 
 const CHAR_DIR := "res://assets/kaykit/characters/"
 const WEAPON_DIR := "res://assets/kaykit/weapons/"
-const LOOPS := ["Idle", "Running_A", "Running_B", "Walking_A", "Walking_D_Skeletons", "2H_Melee_Attack_Spinning", "Spellcasting", "Unarmed_Idle", "2H_Melee_Idle"]
+const LOOPS := ["Run", "Walk", "Flying_Idle", "Fast_Flying", "Idle", "Running_A", "Running_B", "Walking_A", "Walking_D_Skeletons", "2H_Melee_Attack_Spinning", "Spellcasting", "Unarmed_Idle", "2H_Melee_Idle"]
 
 var model: Node3D
 var ap: AnimationPlayer
@@ -27,9 +27,23 @@ var _cur := ""
 
 static func create(file: String, height: float, hide_list: Array = [], anims := {}) -> CharModel:
 	var c := CharModel.new()
-	c.model = (load(CHAR_DIR + file + ".glb") as PackedScene).instantiate()
+	var path := file if file.begins_with("res://") else CHAR_DIR + file + ".glb"
+	c.model = (load(path) as PackedScene).instantiate()
 	c.add_child(c.model)
-	c.model.scale = Vector3.ONE * (height / 2.4)
+	if file.begins_with("res://"):
+		# modelos de otros packs: se escalan según su tamaño real
+		var top := 0.0
+		for mi in c.model.find_children("*", "MeshInstance3D", true, false):
+			var t := Transform3D()
+			var n: Node = mi
+			while n != c.model and n is Node3D:
+				t = (n as Node3D).transform * t
+				n = n.get_parent()
+			var ab: AABB = t * mi.get_aabb()
+			top = max(top, ab.end.y)
+		c.model.scale = Vector3.ONE * (height / max(0.1, top))
+	else:
+		c.model.scale = Vector3.ONE * (height / 2.4)
 	c.ap = c.model.find_child("AnimationPlayer", true, false)
 	c.skel = c.model.find_child("Skeleton3D", true, false) as Skeleton3D
 	for k in anims:

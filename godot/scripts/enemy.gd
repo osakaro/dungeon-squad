@@ -74,11 +74,12 @@ func setup(m, _type: String, level: int, delay := 0.0, final := false) -> void:
 	cs.shape = sh
 	cs.position.y = 0.5
 	add_child(cs)
-	rig = Builder.enemy(type)
-	if final:
-		rig.scale *= 1.25
+	var biome: String = main.arena.biome
+	rig = Builder.enemy("final", biome) if final else Builder.enemy(type, biome)
+	if type == "champion":
+		display_name = {"forest": "DINO SALVAJE", "ice": "BÁRBARO DE LAS NIEVES", "lava": "DEMONIO DE FUEGO"}.get(biome, display_name)
 	add_child(rig)
-	if rig is CharModel:
+	if rig is CharModel and rig.anim_spawn != "":
 		rig.spawn()
 		spawn_t += 0.6
 	else:
@@ -171,7 +172,7 @@ func _physics_process(delta: float) -> void:
 				var shots := 3 if g > 4 else 1
 				for i in shots:
 					var a := atan2(dir.x, dir.z) + (i - (shots - 1) / 2.0) * 0.25
-					main.shoot(global_position, Vector3(sin(a), 0, cos(a)) * 7.0, {"kind": "ebul", "enemy": true, "dmg": dmg})
+					main.shoot(global_position, Vector3(sin(a), 0, cos(a)) * 7.0, {"kind": {"forest": "eleaf", "ice": "eice"}.get(main.arena.biome, "ebul"), "enemy": true, "dmg": dmg})
 				FX.burst(global_position + Vector3.UP, Color(0.7, 0.3, 1), 8, 2.0, 0.05, 0.3)
 		"brute", "champion":
 			mode_t -= delta

@@ -278,6 +278,9 @@ func _build_hud() -> void:
 	full(banner)
 	banner.modulate.a = 0.0
 	hud.add_child(banner)
+	var arrows := EnemyArrows.new()
+	full(arrows)
+	hud.add_child(arrows)
 	joy_base = ig(Panel.new())
 	joy_base.size = Vector2(140, 140)
 	joy_base.add_theme_stylebox_override("panel", sb(Color(1, 1, 1, 0.06), 70, Color(1, 1, 1, 0.25), 2, 0))
@@ -332,6 +335,9 @@ func show_banner(text: String, color := Color.WHITE) -> void:
 	tw.chain().tween_property(banner, "modulate:a", 0.0, 0.5)
 
 func show_hud() -> void:
+	for c in hud.get_children():
+		if c is EnemyArrows:
+			c.main = main
 	hide_all()
 	hud.visible = true
 

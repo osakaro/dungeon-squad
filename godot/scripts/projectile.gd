@@ -16,7 +16,7 @@ var spin_node: Node3D
 var done := false
 
 const COLORS := {"arrow": Color(1, 1, 0.9), "fire": Color(1, 0.45, 0.1), "dagger": Color(0.85, 0.9, 1),
-	"bolt": Color(0.35, 1, 0.5), "ebul": Color(1, 0.2, 0.6), "wave": Color(1, 0.85, 0.4), "big": Color(0.4, 0.9, 1)}
+	"bolt": Color(0.35, 1, 0.5), "ebul": Color(1, 0.2, 0.6), "eleaf": Color(0.5, 1.0, 0.2), "eice": Color(0.4, 0.85, 1.0), "wave": Color(1, 0.85, 0.4), "big": Color(0.4, 0.9, 1)}
 
 func setup(m, opts: Dictionary) -> void:
 	main = m
@@ -60,7 +60,7 @@ func _build() -> void:
 		"bolt":
 			add_child(FX.glow_sphere(0.17, c, 5.0))
 			FX.trail(self, c, 0.08, 30, 0.4)
-		"ebul":
+		"ebul", "eleaf", "eice":
 			add_child(FX.glow_sphere(0.17, c, 4.0))
 			FX.trail(self, c, 0.06, 12, 0.2)
 		"wave":
