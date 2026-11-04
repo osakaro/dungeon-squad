@@ -36,6 +36,9 @@ El nigromante **Malakar** ha despertado y su ejército de esqueletos invade el r
   - Rey Esqueleto en las salas 10 y 20.
   - Jefe final en la sala 25.
 - Al completar un capítulo se abre el siguiente.
+- La historia se cuenta con **escenas animadas**: Malakar invoca a su ejército, el escuadrón llega al lugar, los héroes se rescatan de sus jaulas y todos lo celebran al final. Se pueden saltar.
+
+![Cinemática](../docs/godot-cinematica.png)
 - Fuera del mapa ves el paisaje de cada zona: árboles y luciérnagas, pinos nevados con nieve cayendo, o ríos de lava con chispas.
 
 ![Bosque](../docs/godot-bosque.png)

@@ -53,6 +53,13 @@ var story_btn: Button
 var story_lines := []
 var story_idx := 0
 var story_cb: Callable
+# cinemáticas
+signal cine_next
+var cine: Control
+var cine_top: ColorRect
+var cine_bot: ColorRect
+var cine_lbl: Label
+var cine_title: Label
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -63,6 +70,7 @@ func _ready() -> void:
 	_build_pause()
 	_build_title()
 	_build_story()
+	_build_cine()
 	hide_all()
 
 # ================= helpers =================
@@ -212,7 +220,7 @@ func spacer(expand_h := true) -> Control:
 	return c
 
 func hide_all() -> void:
-	for c in [hud, menu, choose, endscr, pause_scr, title_scr, story_scr]:
+	for c in [hud, menu, choose, endscr, pause_scr, title_scr, story_scr, cine]:
 		c.visible = false
 
 func _clear(c: Node) -> void:
@@ -738,11 +746,94 @@ func _story_next() -> void:
 	tw.tween_property(story_text, "visible_ratio", 1.0, story_text.text.length() * 0.025)
 	story_btn.text = "Continuar" if story_idx < story_lines.size() - 1 else "¡Adelante!"
 
+# ================= CINEMÁTICAS =================
+func _build_cine() -> void:
+	cine = full(Control.new())
+	add_child(cine)
+	cine.visible = false
+	cine.gui_input.connect(func(e):
+		if (e is InputEventMouseButton or e is InputEventScreenTouch) and e.pressed:
+			_cine_advance())
+	cine_top = ColorRect.new()
+	cine_top.color = Color.BLACK
+	cine_top.anchor_right = 1.0
+	cine_top.offset_bottom = 0
+	ig(cine_top)
+	cine.add_child(cine_top)
+	cine_bot = ColorRect.new()
+	cine_bot.color = Color.BLACK
+	cine_bot.anchor_right = 1.0
+	cine_bot.anchor_top = 1.0
+	cine_bot.anchor_bottom = 1.0
+	ig(cine_bot)
+	cine.add_child(cine_bot)
+	cine_lbl = center(wrapl(lbl("", 22, Color(0.95, 0.93, 0.88)), 900))
+	cine_lbl.anchor_left = 0.5
+	cine_lbl.anchor_right = 0.5
+	cine_lbl.anchor_top = 1.0
+	cine_lbl.anchor_bottom = 1.0
+	cine_lbl.offset_left = -470
+	cine_lbl.offset_right = 470
+	cine_lbl.offset_top = -112
+	cine_lbl.offset_bottom = -12
+	cine.add_child(cine_lbl)
+	cine_title = center(lbl("", 52, Color.WHITE, true))
+	full(cine_title)
+	cine_title.add_theme_constant_override("outline_size", 10)
+	cine_title.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.6))
+	cine.add_child(cine_title)
+	var skipb := btn("Saltar  >>", func():
+		main.cine.skip = true
+		cine_next.emit(), 15)
+	skipb.anchor_left = 1.0
+	skipb.anchor_right = 1.0
+	skipb.offset_left = -150
+	skipb.offset_right = -20
+	skipb.offset_top = 22
+	skipb.offset_bottom = 62
+	cine.add_child(skipb)
+
+func cine_show(on: bool, title := "") -> void:
+	if on:
+		hide_all()
+		cine.visible = true
+		cine_lbl.text = ""
+		var tw := cine.create_tween().set_parallel()
+		tw.tween_property(cine_top, "offset_bottom", 120.0, 0.6).set_trans(Tween.TRANS_CUBIC)
+		tw.tween_property(cine_bot, "offset_top", -120.0, 0.6).set_trans(Tween.TRANS_CUBIC)
+		cine_title.text = title
+		cine_title.modulate.a = 0.0
+		if title != "":
+			var t2 := cine_title.create_tween()
+			t2.tween_property(cine_title, "modulate:a", 1.0, 0.8).set_delay(0.4)
+			t2.tween_interval(1.6)
+			t2.tween_property(cine_title, "modulate:a", 0.0, 0.8)
+	else:
+		cine.visible = false
+		cine_top.offset_bottom = 0
+		cine_bot.offset_top = 0
+
+func cine_say(text: String) -> void:
+	cine_lbl.text = text
+	cine_lbl.visible_ratio = 0.0
+	var tw := cine_lbl.create_tween()
+	tw.tween_property(cine_lbl, "visible_ratio", 1.0, text.length() * 0.03)
+
+func _cine_advance() -> void:
+	if cine_lbl.visible_ratio < 1.0:
+		cine_lbl.visible_ratio = 1.0
+	else:
+		Sfx.play("click", -12.0, 0.0)
+		cine_next.emit()
+
 # ================= ENTRADA =================
 func _unhandled_input(e: InputEvent) -> void:
 	if title_scr.visible and ((e is InputEventKey and e.pressed) or (e is InputEventMouseButton and e.pressed) or (e is InputEventScreenTouch and e.pressed) or (e is InputEventJoypadButton and e.pressed)):
 		Sfx.play("pick", -6.0, 0.0)
 		main.go_menu()
+		return
+	if cine.visible and e is InputEventKey and e.pressed and (e.keycode == KEY_SPACE or e.keycode == KEY_ENTER):
+		_cine_advance()
 		return
 	if story_scr.visible and e is InputEventKey and e.pressed and (e.keycode == KEY_SPACE or e.keycode == KEY_ENTER):
 		_story_next()

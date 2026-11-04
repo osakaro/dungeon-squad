@@ -230,7 +230,7 @@ func attack() -> void:
 		var d := Vector3(sin(a + o), 0, cos(a + o))
 		main.shoot(global_position, d * sp, {"kind": KIND[key], "dmg": dmg, "pierce": pierce, "bounce": bounce,
 			"aoe": aoe if key == "mago" else 0.0, "chain": chain if key != "arquero" else 0,
-			"life": 0.65 if key == "asesino" else 3.0})
+			"life": 0.65 if key == "asesino" else 1.4})
 
 # ---------------- habilidades ----------------
 func cast(k: String, l: int) -> bool:
@@ -376,7 +376,17 @@ func take_damage(d: float) -> void:
 			tw.tween_property(rig, "rotation:x", -PI / 2, 0.5).set_trans(Tween.TRANS_BOUNCE).set_ease(Tween.EASE_OUT)
 		main.on_player_died()
 
+## Máximo de veces que se puede coger cada mejora
+const PASSIVE_MAX := {"multi": 3, "pierce": 2, "bounce": 2, "diag": 2, "aoe": 3, "chain": 3, "orb": 3, "arc": 2,
+	"wave": 3, "lifesteal": 3, "thorns": 3, "crit": 3, "spdpas": 2, "dmg": 6, "rate": 4, "hp": 6, "spd": 3}
+const ABILITY_MAX := 5
+var taken := {}
+
+func can_take(p: String) -> bool:
+	return int(taken.get(p, 0)) < int(PASSIVE_MAX.get(p, 99))
+
 func apply_passive(p: String) -> void:
+	taken[p] = int(taken.get(p, 0)) + 1
 	match p:
 		"multi": multi += 1
 		"pierce": pierce += 1

@@ -46,8 +46,13 @@ func _physics_process(delta: float) -> void:
 		vel.x *= 0.98
 		vel.z *= 0.98
 	global_position += vel * delta
-	if global_position.y < 0.2 and age <= 0.6:
-		global_position.y = 0.2
-		vel.y = abs(vel.y) * 0.4
+	if global_position.y < 0.25 and not (age > 0.6 and (to.length() < 3.5 or main.portal_open)):
+		# rebota y luego se queda flotando en el suelo hasta que la recojas
+		global_position.y = 0.25
+		vel.y = abs(vel.y) * 0.4 if abs(vel.y) > 1.0 else 0.0
+		vel.x *= 0.85
+		vel.z *= 0.85
+		if age > 0.8:
+			mesh.position.y = sin(age * 4.0) * 0.06
 	global_position.x = clamp(global_position.x, -6.6, 6.6)
 	global_position.z = clamp(global_position.z, -10.6, 10.6)

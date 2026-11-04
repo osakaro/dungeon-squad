@@ -91,6 +91,7 @@ func _physics_process(delta: float) -> void:
 	if r:
 		if bounce > 0 and not enemy:
 			bounce -= 1
+			life = min(life, 0.7)
 			vel = vel.bounce(r.normal)
 			vel.y = 0
 			global_position = r.position + r.normal * 0.05
@@ -123,7 +124,7 @@ func _physics_process(delta: float) -> void:
 					vel = d.normalized() * vel.length()
 					orient()
 					chain -= 1
-					life = 2.0
+					life = 0.9
 					FX.burst(global_position, COLORS[kind], 8, 3.0, 0.05, 0.3)
 					return
 			if aoe > 0.0 or pierce <= 0:

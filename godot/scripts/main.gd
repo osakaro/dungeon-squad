@@ -22,6 +22,9 @@ var spot: SpotLight3D
 var level := 1               # sala dentro del capítulo (1-25)
 var chapter := 0
 var lineup: Node3D
+var cine
+var cine_pos := Vector3(0, 8, 12)
+var cine_look := Vector3.ZERO
 var title_t := 0.0
 var run_coins := 0
 var portal_open := false
@@ -43,6 +46,10 @@ func _ready() -> void:
 	ui = UIScript.new()
 	ui.main = self
 	add_child(ui)
+	cine = preload("res://scripts/cutscene.gd").new()
+	cine.main = self
+	cine.ui = ui
+	add_child(cine)
 	hero_keys = ["guerrero", "arquero", "mago", "asesino", "nigromante"]
 	chapter = clamp(GameData.chapters_open - 1, 0, GameData.CHAPTERS.size() - 1)
 	go_title()
@@ -195,8 +202,14 @@ func start_run() -> void:
 	if not story_key in GameData.story_seen:
 		GameData.story_seen.append(story_key)
 		GameData.save_game()
-		state = "story"
-		ui.show_story("Capítulo %d: %s" % [chapter + 1, GameData.CHAPTERS[chapter].name], GameData.CHAPTERS[chapter].intro, _begin_run)
+		if lineup:
+			lineup.queue_free()
+			lineup = null
+		if showcase:
+			showcase.queue_free()
+			showcase = null
+		pedestal.visible = false
+		cine.intro(chapter, _begin_run)
 		return
 	_begin_run()
 
@@ -356,6 +369,8 @@ func _physics_process(delta: float) -> void:
 
 func room_cleared() -> void:
 	state = "story"
+	for c in get_tree().get_nodes_in_group("coins"):
+		collect_coin(c.value, c.global_position)
 	GameData.record_progress(chapter, level)
 	var new_heroes := GameData.check_unlocks(chapter, level)
 	GameData.save_game()
@@ -365,11 +380,10 @@ func _after_unlocks(list: Array) -> void:
 	if list.size() > 0:
 		var h: String = list.pop_front()
 		Sfx.play("win", 0.0, 0.0)
-		ui.show_story("¡NUEVO HÉROE: %s!" % GameData.HEROES[h].name.to_upper(), [GameData.UNLOCK_STORY[h]],
-			_after_unlocks.bind(list), GameData.HEROES[h].color.lightened(0.3))
+		cine.unlock(h, _after_unlocks.bind(list))
 		return
 	if level >= GameData.MAX_LEVEL:
-		ui.show_story("¡Capítulo %d completado!" % (chapter + 1), GameData.CHAPTERS[chapter].outro, finish.bind(true))
+		cine.outro(chapter, finish.bind(true))
 	else:
 		show_choose()
 
@@ -383,6 +397,9 @@ func _process(delta: float) -> void:
 				h.animate(delta, 0.0)
 		target_pos = Vector3(sin(title_t * 0.12) * 6.0, 2.6, 2.0 + cos(title_t * 0.12) * 6.0)
 		look = Vector3(0, 1.4, 1.5)
+	elif state == "cutscene":
+		target_pos = cine_pos
+		look = cine_look
 	elif state == "menu":
 		if showcase:
 			showcase.rotation.y += delta * 0.7
@@ -399,7 +416,7 @@ func _process(delta: float) -> void:
 	else:
 		return
 	var want := Transform3D(Basis(), target_pos).looking_at(look, Vector3.UP)
-	var k := 1.0 - exp(-5.0 * delta)
+	var k := 1.0 - exp((-1.8 if state == "cutscene" else -5.0) * delta)
 	var tr := cam.global_transform.interpolate_with(want, k)
 	cam.global_transform = tr
 	cam.h_offset = randf_range(-1, 1) * FX.shake_amount * 0.5
@@ -414,6 +431,8 @@ func show_choose() -> void:
 	var h: Dictionary = GameData.HEROES[player.key]
 	var pool := []
 	for p in h.passives + ["dmg", "rate", "hp", "heal", "spd"]:
+		if not player.can_take(p):
+			continue
 		var d: Array = GameData.PASSIVES[p]
 		var common: bool = p in ["dmg", "rate", "hp", "heal", "spd"]
 		pool.append({"tag": "MEJORA", "icon": p, "title": d[0], "desc": d[1], "rarity": "common" if common else "rare",
@@ -423,7 +442,7 @@ func show_choose() -> void:
 		if a.lvl == 0:
 			pool.append({"tag": "NUEVA", "icon": a.key, "title": info.name, "desc": info.desc, "rarity": "legend",
 				"color": info.color, "cb": _level_ability.bind(a), "w": 3.0})
-		else:
+		elif a.lvl < player.ABILITY_MAX:
 			pool.append({"tag": "NIVEL %d" % (a.lvl + 1), "icon": a.key, "title": info.name, "rarity": "epic",
 				"desc": "Más daño y -15% de tiempo de recarga", "color": info.color, "cb": _level_ability.bind(a), "w": 1.6})
 	var picks := []
