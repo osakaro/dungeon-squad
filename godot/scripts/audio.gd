@@ -18,10 +18,10 @@ func _ready() -> void:
 		players.append(p)
 	_make_sounds()
 	music = AudioStreamPlayer.new()
-	music.volume_db = -9.0
+	music.volume_db = -13.0
 	add_child(music)
-	music.stream = _make_music()
-	music.play()
+	muted = not GameData.sfx_on
+	play_music("title")
 
 # ---------- síntesis ----------
 ## wave: 0 seno, 1 cuadrada, 2 sierra, 3 triángulo. noise: mezcla de ruido 0..1
@@ -128,93 +128,152 @@ func play(name: String, vol_db := 0.0, pitch_var := 0.08) -> void:
 
 func set_muted(m: bool) -> void:
 	muted = m
-	music.stream_paused = m
+	GameData.sfx_on = not m
 
-func set_intense(on: bool) -> void:
-	music.pitch_scale = 1.12 if on else 1.0
+func set_intense(_on: bool) -> void:
+	pass
 
 # ---------- música ----------
-func _make_music() -> AudioStreamWAV:
-	var bpm := 112.0
-	var beat := 60.0 / bpm
-	var bars := 8
-	var n := int(bars * 4 * beat * RATE)
+## Música ambiental tranquila, distinta para cada bioma. Se genera en segundo plano.
+const MRATE := 16000
+const TRACKS := {
+	# raíz, escala (semitonos), acordes (grados), bpm, timbre de melodía, percusión
+	"title": [146.83, [0, 3, 5, 7, 10], [[0, 3, 7], [-4, 0, 3], [-2, 2, 5], [-5, -2, 2]], 66.0, 3, false],
+	"forest": [146.83, [0, 2, 3, 7, 9], [[0, 3, 7], [5, 9, 12], [-2, 2, 5], [3, 7, 10]], 72.0, 3, false],
+	"ice": [164.81, [0, 2, 3, 7, 10], [[0, 3, 7], [-4, 0, 3], [-7, -3, 0], [-2, 2, 5]], 62.0, 0, false],
+	"lava": [130.81, [0, 1, 3, 7, 8], [[0, 3, 7], [1, 5, 8], [-4, 0, 3], [-5, -1, 2]], 80.0, 2, true],
+}
+var _cache := {}
+var _wanted := ""
+var _thread: Thread
+var _queue := []
+
+func play_music(kind: String) -> void:
+	_wanted = kind
+	if _cache.has(kind):
+		_start(kind)
+	elif not kind in _queue:
+		_queue.append(kind)
+		_next_job()
+
+func _next_job() -> void:
+	if _thread and _thread.is_alive():
+		return
+	if _thread:
+		_thread.wait_to_finish()
+	if _queue.is_empty():
+		return
+	var k: String = _queue.pop_front()
+	_thread = Thread.new()
+	_thread.start(_job.bind(k))
+
+func _job(k: String) -> void:
+	var w := _make_track(k)
+	call_deferred("_job_done", k, w)
+
+func _job_done(k: String, w: AudioStreamWAV) -> void:
+	_cache[k] = w
+	if _wanted == k:
+		_start(k)
+	_next_job()
+
+func _start(kind: String) -> void:
+	if music.stream == _cache[kind] and music.playing:
+		return
+	var tw := create_tween()
+	if music.playing:
+		tw.tween_property(music, "volume_db", -40.0, 0.8)
+	tw.tween_callback(func():
+		music.stream = _cache[kind]
+		music.volume_db = -40.0
+		music.play()
+		music.stream_paused = not GameData.music_on)
+	tw.tween_property(music, "volume_db", -13.0, 1.5)
+
+func set_music_on(on: bool) -> void:
+	GameData.music_on = on
+	music.stream_paused = not on
+
+func _exit_tree() -> void:
+	if _thread:
+		_thread.wait_to_finish()
+
+func _make_track(kind: String) -> AudioStreamWAV:
+	var cfg: Array = TRACKS[kind]
+	var root: float = cfg[0]
+	var scale: Array = cfg[1]
+	var chords: Array = cfg[2]
+	var beat: float = 60.0 / cfg[3]
+	var bars := 16
+	var n := int(bars * 4 * beat * MRATE)
 	var buf := PackedFloat32Array()
 	buf.resize(n)
-	# progresión en La menor: Am  F  G  Em
-	var roots := [110.0, 87.31, 98.0, 82.41]
-	var chords := [[0, 3, 7], [0, 4, 7], [0, 4, 7], [0, 3, 7]]
-	var step := beat / 4.0
-	var steps := bars * 16
-	for s in steps:
-		var bar := s / 16
-		var ci: int = (bar / 2) % 4
-		var root: float = roots[ci]
-		var start := int(s * step * RATE)
-		# bajo en corcheas
-		if s % 2 == 0:
-			_add(buf, start, step * 1.8, root, 2, 0.16, 0.25)
-		# arpegio
-		var ch: Array = chords[ci]
-		var semis: int = ch[s % 3] + (12 if (s / 3) % 2 == 1 else 0)
-		_add(buf, start, step * 1.5, root * 4.0 * pow(2.0, semis / 12.0), 3, 0.07, 1.0)
-		# bombo y caja
-		if s % 8 == 0:
-			_kick(buf, start)
-		if s % 8 == 4:
-			_noise(buf, start, 0.12, 0.12)
-		if s % 2 == 1:
-			_noise(buf, start, 0.03, 0.035)
-	# pad
-	for bar in bars:
-		var ci2: int = (bar / 2) % 4
-		var r2: float = roots[ci2] * 2.0
-		for semi in chords[ci2]:
-			_add(buf, int(bar * 4 * beat * RATE), 4 * beat, r2 * pow(2.0, semi / 12.0), 0, 0.045, 1.0, 0.4)
+	var rng := RandomNumberGenerator.new()
+	rng.seed = hash(kind)
+	# colchón de acordes (pad) con ataque lento
+	for bar in range(0, bars, 2):
+		var ch: Array = chords[(bar / 2) % chords.size()]
+		var st := int(bar * 4 * beat * MRATE)
+		for semi in ch:
+			_voice(buf, st, 8 * beat + 1.0, root * pow(2.0, semi / 12.0), 0, 0.05, 1.6, 2.0)
+		_voice(buf, st, 8 * beat, root * 0.5 * pow(2.0, ch[0] / 12.0), 0, 0.09, 0.3, 1.5)
+	# melodía suave y escasa, con eco
+	var step := beat / 2.0
+	for s in bars * 8:
+		if rng.randf() < 0.32 and (s / 8) % 4 != 3:
+			var deg: int = scale[rng.randi() % scale.size()] + (12 if rng.randf() < 0.4 else 0)
+			var f := root * 2.0 * pow(2.0, deg / 12.0)
+			var st2 := int(s * step * MRATE)
+			_voice(buf, st2, 1.6, f, cfg[4], 0.06, 0.01, 0.0)
+			_voice(buf, st2 + int(beat * 0.75 * MRATE), 1.6, f, cfg[4], 0.025, 0.01, 0.0)
+	# percusión suave (solo volcán)
+	if cfg[5]:
+		for b in bars * 4:
+			if b % 2 == 0:
+				_tom(buf, int(b * beat * MRATE), 0.18 if b % 4 == 0 else 0.1)
 	var data := PackedByteArray()
 	data.resize(n * 2)
 	for i in n:
-		data.encode_s16(i * 2, int(clamp(buf[i], -1.0, 1.0) * 32767))
+		data.encode_s16(i * 2, int(clamp(buf[i] * 1.6, -1.0, 1.0) * 32767))
 	var w := AudioStreamWAV.new()
 	w.format = AudioStreamWAV.FORMAT_16_BITS
-	w.mix_rate = RATE
+	w.mix_rate = MRATE
 	w.data = data
 	w.loop_mode = AudioStreamWAV.LOOP_FORWARD
 	w.loop_end = n
 	return w
 
-func _add(buf: PackedFloat32Array, start: int, dur: float, f: float, wave: int, vol: float, lp := 1.0, attack := 0.01) -> void:
-	var n := int(dur * RATE)
+## Una nota: wave 0 seno, 2 sierra suave, 3 triángulo. release = 0 => decaimiento de pulsación
+func _voice(buf: PackedFloat32Array, start: int, dur: float, f: float, wave: int, vol: float, attack: float, release: float) -> void:
+	var n := int(dur * MRATE)
+	var inc := f / MRATE
 	var ph := 0.0
-	var y := 0.0
+	var a_n: float = max(1.0, attack * MRATE)
+	var r_n := release * MRATE
+	var size := buf.size()
 	for i in n:
-		var idx := start + i
-		if idx >= buf.size():
-			return
-		ph += f / RATE
-		var x := 0.0
-		match wave:
-			0: x = sin(ph * TAU)
-			2: x = fmod(ph, 1.0) * 2.0 - 1.0
-			3: x = abs(fmod(ph, 1.0) * 4.0 - 2.0) - 1.0
-		y = lerp(y, x, lp)
-		var t := float(i) / n
-		var env: float = min(1.0, t / attack) * (1.0 - t)
-		buf[idx] += y * env * vol
+		var idx := (start + i) % size
+		ph += inc
+		var x: float
+		if wave == 0:
+			x = sin(ph * TAU) + 0.3 * sin(ph * TAU * 2.003)
+		elif wave == 3:
+			x = abs(fmod(ph, 1.0) * 4.0 - 2.0) - 1.0
+		else:
+			x = (fmod(ph, 1.0) * 2.0 - 1.0) * 0.5 + sin(ph * TAU) * 0.5
+		var env: float
+		if release <= 0.0:
+			env = min(1.0, i / a_n) * exp(-3.5 * float(i) / n)
+		else:
+			env = min(1.0, i / a_n) * min(1.0, float(n - i) / r_n)
+		buf[idx] += x * env * vol
 
-func _kick(buf: PackedFloat32Array, start: int) -> void:
-	var n := int(0.25 * RATE)
+func _tom(buf: PackedFloat32Array, start: int, vol: float) -> void:
+	var n := int(0.35 * MRATE)
 	var ph := 0.0
 	for i in n:
 		if start + i >= buf.size():
 			return
 		var t := float(i) / n
-		ph += lerp(140.0, 40.0, sqrt(t)) / RATE
-		buf[start + i] += sin(ph * TAU) * pow(1.0 - t, 2.0) * 0.4
-
-func _noise(buf: PackedFloat32Array, start: int, dur: float, vol: float) -> void:
-	var n := int(dur * RATE)
-	for i in n:
-		if start + i >= buf.size():
-			return
-		buf[start + i] += (randf() * 2.0 - 1.0) * pow(1.0 - float(i) / n, 3.0) * vol
+		ph += lerp(110.0, 55.0, t) / MRATE
+		buf[start + i] += sin(ph * TAU) * pow(1.0 - t, 3.0) * vol

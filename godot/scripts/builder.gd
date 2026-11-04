@@ -96,6 +96,9 @@ static func enemy(type: String) -> Rig:
 		"brute":
 			return CharModel.create("Barbarian", 2.3, ["1H_Axe_Offhand", "Barbarian_Round_Shield", "1H_Axe", "Mug"],
 				{"anim_attack": "2H_Melee_Attack_Chop", "anim_cast": "2H_Melee_Attack_Spin", "run_speed_ref": 3.0})
+		"champion":
+			return CharModel.create("Barbarian", 3.6, ["1H_Axe_Offhand", "1H_Axe", "Mug"],
+				{"anim_attack": "2H_Melee_Attack_Chop", "anim_cast": "2H_Melee_Attack_Spin", "run_speed_ref": 2.0})
 		"skeleton":
 			var sk := CharModel.create("Skeleton_Minion", 1.65, [], {"anim_run": "Running_B", "anim_attack": "1H_Melee_Attack_Chop",
 				"anim_spawn": "Spawn_Ground_Skeletons", "anim_death": "Death_C_Skeletons", "run_speed_ref": 3.0})

@@ -122,6 +122,15 @@ func die() -> void:
 		ap.speed_scale = 1.0
 	locked = true
 
+func silhouette(on: bool) -> void:
+	var m := StandardMaterial3D.new()
+	m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	m.albedo_color = Color(0.02, 0.02, 0.04)
+	for mi in meshes:
+		mi.material_override = m if on else null
+	for l in find_children("*", "OmniLight3D", true, false):
+		l.visible = not on
+
 func tint(c: Color) -> void:
 	if c == _tint:
 		return

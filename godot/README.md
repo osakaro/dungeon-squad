@@ -2,7 +2,7 @@
 
 Versión en **Godot 4** del juego, con personajes 3D animados (KayKit), iluminación dinámica, sombras, bloom, partículas, física, efectos de sonido y música.
 
-![Menú](../docs/godot-menu.png)
+![Título](../docs/godot-titulo.png)
 
 ## ▶️ Cómo abrirlo
 
@@ -20,6 +20,27 @@ Versión en **Godot 4** del juego, con personajes 3D animados (KayKit), iluminac
 
 Las **habilidades se lanzan solas** cuando termina su cooldown.
 
+## 📖 Historia y capítulos
+
+El nigromante **Malakar** ha despertado y su ejército de esqueletos invade el reino de Valdoria. Empiezas solo con **Sir Aldric, el Guerrero**, y vas rescatando al resto del escuadrón:
+
+| Capítulo | Bioma | Jefe final | Héroes que desbloqueas |
+|---|---|---|---|
+| 1. El Bosque Susurrante | 🌲 Bosque | Rey del Bosque Marchito | Arquero (sala 10), Mago (sala 25) |
+| 2. Las Cumbres Heladas | ❄️ Hielo y nieve | Rey Escarcha | Asesino (sala 10), Nigromante (sala 25) |
+| 3. El Corazón del Volcán | 🌋 Lava | Malakar, Señor de las Cenizas | — |
+
+- Cada capítulo tiene **25 salas**:
+  - Campeón bárbaro en las salas 5 y 15.
+  - Rey Esqueleto en las salas 10 y 20.
+  - Jefe final en la sala 25.
+- Al completar un capítulo se abre el siguiente.
+- Fuera del mapa ves el paisaje de cada zona: árboles y luciérnagas, pinos nevados con nieve cayendo, o ríos de lava con chispas.
+
+![Bosque](../docs/godot-bosque.png)
+![Hielo](../docs/godot-hielo.png)
+![Volcán](../docs/godot-volcan.png)
+
 ## ✨ Qué incluye
 
 - **5 héroes animados** (correr, atacar, lanzar hechizos, morir…) con arma, ataque y 2 habilidades propias: Arquero, Mago, Guerrero, Asesino y Nigromante (un mago esqueleto).
@@ -31,9 +52,10 @@ Las **habilidades se lanzan solas** cuando termina su cooldown.
   - **Rey Esqueleto (jefe):** 3 patrones de ataque, invoca esqueletos y se enfurece a mitad de vida.
 - **10 niveles** en 2 mundos (la mazmorra y el abismo), con jefe en los niveles 5 y 10.
 - Las **salas se generan al azar**: columnas, cajas y barriles que bloquean el paso y los disparos.
-- **Cartas de mejora** entre niveles: pasivas, desbloquear o subir habilidades.
+- **Cartas de mejora** con rareza (común, rara, épica y legendaria), iconos dibujados y animaciones.
+- **Pantalla de inicio** con el logo y textos de historia con efecto máquina de escribir.
 - **Mejora permanente de armas** con las monedas. El progreso se guarda.
-- **Sonido generado por código:** efectos para cada ataque, golpe, explosión, moneda y habilidad, más música de fondo que se acelera con el jefe. Se puede silenciar desde la pausa.
+- **Sonido generado por código:** efectos para cada ataque, golpe, explosión, moneda y habilidad, más música ambiental tranquila y distinta en cada zona. La música y los efectos se pueden quitar por separado desde la pausa.
 - **Efectos:**
   - números de daño (críticos en amarillo);
   - temblor de cámara y retroceso de los enemigos al golpearlos;
@@ -41,7 +63,7 @@ Las **habilidades se lanzan solas** cuando termina su cooldown.
   - portal animado;
   - monedas que vuelan hacia ti.
 
-![Nigromante](../docs/godot-nigromante.png)
+![Cartas](../docs/godot-cartas.png)
 ![Sala](../docs/godot-sala.png)
 ![Mundo 2](../docs/godot-mundo2.png)
 
@@ -63,6 +85,9 @@ godot/
     ├── arena.gd            # generación de la mazmorra
     ├── audio.gd            # efectos de sonido y música (autoload Sfx)
     ├── char_model.gd       # carga y anima los modelos KayKit
+    ├── biome.gd            # paisajes exteriores de cada capítulo
+    ├── skill_icon.gd       # iconos vectoriales de habilidades
+    ├── emblem.gd           # escudo del logo
     ├── builder.gd          # qué modelo y arma usa cada personaje
     ├── rig.gd              # esqueleto y animación procedural
     ├── fx.gd               # partículas y efectos

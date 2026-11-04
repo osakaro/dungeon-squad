@@ -14,13 +14,12 @@ var portal_mat: StandardMaterial3D
 var portal_light: OmniLight3D
 var portal_fx: CPUParticles3D
 var portal_rune: StandardMaterial3D
-var theme := -1
 var time := 0.0
 
-const THEMES := [
-	{"floor": Color(1, 1, 1), "torch": Color(1.0, 0.55, 0.2), "fog": Color(0.06, 0.05, 0.1)},
-	{"floor": Color(1.0, 0.82, 0.85), "torch": Color(0.75, 0.3, 1.0), "fog": Color(0.12, 0.03, 0.08)},
-]
+var wall_mm: MultiMesh
+var wall_colors := []
+var outside: Node3D
+var biome := ""
 
 func build() -> void:
 	_build_floor()
@@ -121,7 +120,10 @@ func _build_walls() -> void:
 	for i in bricks.size():
 		mm.set_instance_transform(i, Transform3D(Basis(), bricks[i]))
 		var v := randf_range(0.65, 1.0)
-		mm.set_instance_color(i, Color(0.48 * v, 0.4 * v, 0.33 * v))
+		var wc := Color(0.48 * v, 0.4 * v, 0.33 * v)
+		wall_colors.append(wc)
+		mm.set_instance_color(i, wc)
+	wall_mm = mm
 	var mmi := MultiMeshInstance3D.new()
 	mmi.multimesh = mm
 	add_child(mmi)
@@ -143,7 +145,7 @@ func _build_torches() -> void:
 			flame.emitting = true
 			add_child(flame)
 			var l := OmniLight3D.new()
-			l.light_color = THEMES[0].torch
+			l.light_color = Color(1.0, 0.55, 0.2)
 			l.omni_range = 7.5
 			l.omni_attenuation = 1.4
 			l.position = Vector3(x - side * 0.6, 2.2, z)
@@ -223,18 +225,27 @@ func close_portal() -> void:
 func in_portal(p: Vector3) -> bool:
 	return p.z < -H / 2 + 1.25 and abs(p.x) < 1.4
 
-func set_theme(idx: int, env: Environment) -> void:
-	if idx == theme:
+func set_biome(kind: String, env: Environment) -> void:
+	if kind == biome:
 		return
-	theme = idx
-	var th: Dictionary = THEMES[idx]
+	biome = kind
+	var st: Dictionary = Biome.SETTINGS[kind]
 	for i in floor_colors.size():
 		var c: Color = floor_colors[i]
-		floor_mm.set_instance_color(i, Color(c.r * th.floor.r, c.g * th.floor.g, c.b * th.floor.b))
+		floor_mm.set_instance_color(i, Color(c.r * st.floor.r, c.g * st.floor.g, c.b * st.floor.b))
+	for i in wall_colors.size():
+		var c: Color = wall_colors[i]
+		wall_mm.set_instance_color(i, Color(c.r * st.wall.r, c.g * st.wall.g, c.b * st.wall.b))
 	for t in torches:
-		t.light_color = th.torch
+		t.light_color = st.torch
 	if env:
-		env.fog_light_color = th.fog
+		env.fog_light_color = st.fog
+		env.ambient_light_color = st.ambient
+		env.background_color = st.bg
+	if outside:
+		outside.queue_free()
+	outside = Biome.build(kind)
+	add_child(outside)
 
 func clear_level() -> void:
 	for c in level_nodes.get_children():

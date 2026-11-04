@@ -1,8 +1,49 @@
 extends Node
 ## Datos globales: héroes, habilidades, mejoras y guardado.
 
-const MAX_LEVEL := 10
-const SAVE_PATH := "user://dungeonsquad.cfg"
+const MAX_LEVEL := 25          # salas por capítulo
+const START_HERO := "guerrero"
+
+## Capítulos: cada uno tiene 25 salas y un bioma distinto alrededor del mapa.
+const CHAPTERS := [
+	{"name": "El Bosque Susurrante", "biome": "forest", "boss": "Rey del Bosque Marchito",
+		"intro": ["Hace siglos, el escuadrón de héroes mantenía la paz en el reino de Valdoria.",
+			"Pero el nigromante Malakar ha despertado y su ejército de esqueletos devora el Bosque Susurrante.",
+			"Sir Aldric, el último caballero en pie, se adentra solo en la espesura...",
+			"Debe encontrar a sus compañeros perdidos y reunir de nuevo al DUNGEON SQUAD."],
+		"outro": ["El Rey del Bosque Marchito cae y los árboles vuelven a respirar.",
+			"Pero las huellas de Malakar se pierden hacia el norte, entre montañas de hielo eterno..."]},
+	{"name": "Las Cumbres Heladas", "biome": "ice", "boss": "Rey Escarcha",
+		"intro": ["El viento corta como una espada en las Cumbres Heladas.",
+			"Malakar ha encerrado aquí a los héroes que se atrevieron a desafiarle.",
+			"Entre la nieve se oyen pasos rápidos... y el crujir de huesos congelados."],
+		"outro": ["El Rey Escarcha se quiebra en mil pedazos de hielo.",
+			"Morvek, un hechicero esqueleto que odia a Malakar, decide unirse al escuadrón.",
+			"Juntos parten hacia el último refugio del nigromante: el Corazón del Volcán."]},
+	{"name": "El Corazón del Volcán", "biome": "lava", "boss": "Malakar, Señor de las Cenizas",
+		"intro": ["La roca arde bajo los pies del escuadrón.",
+			"En lo más profundo del volcán, Malakar prepara el ritual que despertará a todos los muertos de Valdoria.",
+			"Es ahora o nunca, héroes."],
+		"outro": ["Malakar se desvanece entre las llamas y su ejército se convierte en polvo.",
+			"Valdoria vuelve a ser libre. El DUNGEON SQUAD será recordado para siempre.",
+			"¡GRACIAS POR JUGAR!"]},
+]
+
+## Cuándo se desbloquea cada héroe: [capítulo, sala superada]
+const UNLOCKS := {
+	"guerrero": [-1, 0],
+	"arquero": [0, 10],
+	"mago": [0, 25],
+	"asesino": [1, 10],
+	"nigromante": [1, 25],
+}
+const UNLOCK_STORY := {
+	"arquero": "Entre las ramas encuentras a Lyra, la arquera élfica, atrapada en una jaula de huesos. Tras liberarla, tensa su ballesta: «Malakar pagará por esto».",
+	"mago": "Eldrin, el viejo mago, te esperaba al final del bosque. «Sabía que vendrías, caballero. Mi fuego está a tu servicio».",
+	"asesino": "Una sombra cae del techo helado. Es Kael, el asesino, que llevaba semanas cazando esqueletos en solitario. «Por fin alguien que sabe pelear».",
+	"nigromante": "Morvek, el hechicero esqueleto, se arrodilla ante el escuadrón. «Malakar me robó la vida. Ahora usaré su magia contra él».",
+}
+const SAVE_PATH := "user://dungeonsquad_v2.cfg"
 
 const HEROES := {
 	"arquero": {"name": "Arquero", "desc": "Dispara flechas rápidas a distancia. Frágil pero letal.",
@@ -58,6 +99,34 @@ const PASSIVES := {
 
 var coins := 0
 var weapon_level := {}
+var unlocked := ["guerrero"]
+var chapter_best := {}       # capítulo -> mejor sala alcanzada
+var chapters_open := 1
+var story_seen := []
+var music_on := true
+var sfx_on := true
+
+func is_unlocked(hero: String) -> bool:
+	return hero in unlocked
+
+func unlock_text(hero: String) -> String:
+	var u: Array = UNLOCKS[hero]
+	return "Se desbloquea al superar la sala %d del capítulo %d" % [u[1], u[0] + 1]
+
+## Devuelve los héroes que se desbloquean al superar esta sala
+func check_unlocks(chapter: int, room: int) -> Array:
+	var res := []
+	for h in UNLOCKS:
+		var u: Array = UNLOCKS[h]
+		if u[0] == chapter and u[1] == room and not h in unlocked:
+			unlocked.append(h)
+			res.append(h)
+	return res
+
+func record_progress(chapter: int, room: int) -> void:
+	chapter_best[chapter] = max(int(chapter_best.get(chapter, 0)), room)
+	if room >= MAX_LEVEL and chapter + 1 < CHAPTERS.size():
+		chapters_open = max(chapters_open, chapter + 2)
 
 func _ready() -> void:
 	_setup_input()
@@ -94,9 +163,21 @@ func load_game() -> void:
 	if cfg.load(SAVE_PATH) == OK:
 		coins = int(cfg.get_value("save", "coins", 0))
 		weapon_level = cfg.get_value("save", "weapon_level", {})
+		unlocked = cfg.get_value("save", "unlocked", ["guerrero"])
+		chapter_best = cfg.get_value("save", "chapter_best", {})
+		chapters_open = int(cfg.get_value("save", "chapters_open", 1))
+		story_seen = cfg.get_value("save", "story_seen", [])
+		music_on = bool(cfg.get_value("save", "music_on", true))
+		sfx_on = bool(cfg.get_value("save", "sfx_on", true))
 
 func save_game() -> void:
 	var cfg := ConfigFile.new()
 	cfg.set_value("save", "coins", coins)
 	cfg.set_value("save", "weapon_level", weapon_level)
+	cfg.set_value("save", "unlocked", unlocked)
+	cfg.set_value("save", "chapter_best", chapter_best)
+	cfg.set_value("save", "chapters_open", chapters_open)
+	cfg.set_value("save", "story_seen", story_seen)
+	cfg.set_value("save", "music_on", music_on)
+	cfg.set_value("save", "sfx_on", sfx_on)
 	cfg.save(SAVE_PATH)

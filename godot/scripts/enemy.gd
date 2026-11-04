@@ -7,6 +7,7 @@ const STATS := {
 	"skmage": [0.4, 28.0, 1.2, 9.0, 4, 2.2],
 	"brute": [0.6, 95.0, 1.7, 18.0, 9, 3.0],
 	"boss": [1.1, 650.0, 1.4, 25.0, 60, 4.8],
+	"champion": [0.9, 380.0, 1.7, 22.0, 30, 4.0],
 	"skeleton": [0.4, 40.0, 2.5, 12.0, 4, 2.1],
 }
 
@@ -34,17 +35,32 @@ var charge_dir := Vector3.ZERO
 var pattern := 0
 var knock := Vector3.ZERO
 
-func setup(m, _type: String, level: int, delay := 0.0) -> void:
+var is_boss := false
+var display_name := ""
+var g := 1
+
+const NAMES := {"boss": "REY ESQUELETO", "champion": "BÁRBARO CAMPEÓN"}
+
+func setup(m, _type: String, level: int, delay := 0.0, final := false) -> void:
+	g = level
 	main = m
 	type = _type
 	var s: Array = STATS[type]
-	var sc := 1.0 + 0.3 * (level - 1)
+	var sc := 1.0 + 0.13 * (level - 1)
 	radius = s[0]
 	max_hp = s[1] * sc
 	hp = max_hp
 	speed = s[2]
-	dmg = s[3] * (1.0 + 0.15 * (level - 1))
-	coins = s[4] + level / 2
+	dmg = s[3] * (1.0 + 0.05 * (level - 1))
+	coins = s[4] + level / 4
+	is_boss = type in ["boss", "champion"]
+	display_name = NAMES.get(type, "")
+	if final:
+		max_hp *= 2.2
+		hp = max_hp
+		dmg *= 1.2
+		coins *= 3
+		display_name = GameData.CHAPTERS[m.chapter].boss.to_upper()
 	spawn_t = 0.8 + delay
 	t = randf() * 2.0
 	add_to_group("enemies")
@@ -59,6 +75,8 @@ func setup(m, _type: String, level: int, delay := 0.0) -> void:
 	cs.position.y = 0.5
 	add_child(cs)
 	rig = Builder.enemy(type)
+	if final:
+		rig.scale *= 1.25
 	add_child(rig)
 	if rig is CharModel:
 		rig.spawn()
@@ -68,7 +86,7 @@ func setup(m, _type: String, level: int, delay := 0.0) -> void:
 	_build_bar(s[5])
 
 func _build_bar(h: float) -> void:
-	var w := 2.4 if type == "boss" else 1.0
+	var w := 2.4 if is_boss else 1.0
 	for i in 2:
 		var q := QuadMesh.new()
 		q.size = Vector2(w + (0.08 if i == 0 else 0.0), 0.14 if i == 0 else 0.1)
@@ -150,12 +168,12 @@ func _physics_process(delta: float) -> void:
 			if t > 2.4 / sm:
 				rig.attack()
 				t = 0.0
-				var shots := 3 if main.level > 3 else 1
+				var shots := 3 if g > 4 else 1
 				for i in shots:
 					var a := atan2(dir.x, dir.z) + (i - (shots - 1) / 2.0) * 0.25
 					main.shoot(global_position, Vector3(sin(a), 0, cos(a)) * 7.0, {"kind": "ebul", "enemy": true, "dmg": dmg})
 				FX.burst(global_position + Vector3.UP, Color(0.7, 0.3, 1), 8, 2.0, 0.05, 0.3)
-		"brute":
+		"brute", "champion":
 			mode_t -= delta
 			match mode:
 				"chase":
@@ -201,7 +219,7 @@ func _physics_process(delta: float) -> void:
 				FX.shake(0.25)
 				match pattern:
 					0:
-						var n: int = 14 + main.level
+						var n: int = 14 + min(g / 3, 12)
 						for i in n:
 							var a := i * TAU / n + t
 							main.shoot(global_position, Vector3(sin(a), 0, cos(a)) * 6.5, {"kind": "ebul", "enemy": true, "dmg": dmg * 0.5})
@@ -244,12 +262,12 @@ func hurt(amount: float, force_crit := false) -> void:
 	hp -= amount
 	flash = 0.1
 	Sfx.play("crit" if crit else "hit", -6.0 if crit else -10.0)
-	if rig is CharModel and type != "boss" and randf() < 0.3:
+	if rig is CharModel and not is_boss and randf() < 0.3:
 		rig.hit()
-	FX.number(global_position + Vector3.UP * (1.5 if type == "boss" else 0.0), amount, Color(1, 0.85, 0.2) if crit else Color.WHITE, crit)
+	FX.number(global_position + Vector3.UP * (1.5 if is_boss else 0.0), amount, Color(1, 0.85, 0.2) if crit else Color.WHITE, crit)
 	if p:
 		p.on_hit()
-		if type != "boss" and type != "skmage":
+		if not is_boss and type != "skmage":
 			var away: Vector3 = global_position - p.global_position
 			away.y = 0
 			knock = away.normalized() * (4.0 if crit else 2.0)
@@ -262,14 +280,14 @@ func die() -> void:
 	dead = true
 	remove_from_group("enemies")
 	var c: Color = {"rogue": Color(0.6, 0.3, 0.9), "skmage": Color(0.7, 0.3, 1),
-		"brute": Color(0.5, 0.35, 0.2), "boss": Color(0.4, 0.8, 1.0), "skeleton": Color(0.9, 0.9, 0.8)}[type]
-	FX.burst(global_position + Vector3.UP * 0.6, c, 60 if type == "boss" else 22, 6.0 if type == "boss" else 4.5, 0.1, 0.8)
-	if type == "boss":
+		"brute": Color(0.5, 0.35, 0.2), "boss": Color(0.4, 0.8, 1.0), "champion": Color(0.8, 0.5, 0.2), "skeleton": Color(0.9, 0.9, 0.8)}[type]
+	FX.burst(global_position + Vector3.UP * 0.6, c, 60 if is_boss else 22, 6.0 if is_boss else 4.5, 0.1, 0.8)
+	if is_boss:
 		FX.shake(0.8)
 		FX.ring(global_position, 5.0, Color(1, 0.5, 0.1), 0.8)
 		main.hit_stop(0.25)
 	main.spawn_coins(global_position, coins)
-	Sfx.play("roar" if type == "boss" else "kill", 0.0 if type == "boss" else -6.0)
+	Sfx.play("roar" if is_boss else "kill", 0.0 if is_boss else -6.0)
 	if rig is CharModel:
 		var xf := rig.global_transform
 		remove_child(rig)

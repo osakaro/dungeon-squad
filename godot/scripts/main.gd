@@ -8,7 +8,7 @@ const CoinScript := preload("res://scripts/coin.gd")
 const MinionScript := preload("res://scripts/minion.gd")
 const UIScript := preload("res://scripts/ui.gd")
 
-var state := "menu"          # menu, play, choose, end, pause
+var state := "title"         # title, menu, play, choose, story, end, pause
 var arena: Arena
 var cam: Camera3D
 var env: Environment
@@ -19,7 +19,10 @@ var sel := 0
 var showcase: Rig
 var pedestal: Node3D
 var spot: SpotLight3D
-var level := 1
+var level := 1               # sala dentro del capítulo (1-25)
+var chapter := 0
+var lineup: Node3D
+var title_t := 0.0
 var run_coins := 0
 var portal_open := false
 var level_time := 0.0
@@ -40,8 +43,35 @@ func _ready() -> void:
 	ui = UIScript.new()
 	ui.main = self
 	add_child(ui)
-	hero_keys = GameData.HEROES.keys()
-	go_menu()
+	hero_keys = ["guerrero", "arquero", "mago", "asesino", "nigromante"]
+	chapter = clamp(GameData.chapters_open - 1, 0, GameData.CHAPTERS.size() - 1)
+	go_title()
+
+# ---------------- TÍTULO ----------------
+func go_title() -> void:
+	state = "title"
+	pedestal.visible = false
+	arena.set_biome(GameData.CHAPTERS[chapter].biome, env)
+	lineup = Node3D.new()
+	add_child(lineup)
+	var keys := hero_keys.filter(func(k): return GameData.is_unlocked(k))
+	for i in keys.size():
+		var h := Builder.hero(keys[i])
+		lineup.add_child(h)
+		h.position = Vector3((i - (keys.size() - 1) / 2.0) * 1.4, 0, 2.0 - abs(i - (keys.size() - 1) / 2.0) * 0.4)
+		h.rotation.y = 0.0
+		if h is CharModel:
+			h.anim_idle = "Idle" if i % 2 == 0 else "Unarmed_Idle"
+	Sfx.play_music("title")
+	ui.show_title()
+
+func difficulty() -> int:
+	return chapter * GameData.MAX_LEVEL + level
+
+func change_chapter(d: int) -> void:
+	chapter = clamp(chapter + d, 0, GameData.chapters_open - 1)
+	arena.set_biome(GameData.CHAPTERS[chapter].biome, env)
+	ui.update_menu(hero_keys[sel])
 
 func _build_env() -> void:
 	var we := WorldEnvironment.new()
@@ -111,13 +141,17 @@ func go_menu() -> void:
 	get_tree().paused = false
 	Sfx.set_intense(false)
 	state = "menu"
+	if lineup:
+		lineup.queue_free()
+		lineup = null
+	Sfx.play_music("title")
 	clear_level()
 	if player:
 		player.queue_free()
 		player = null
 	arena.clear_level()
 	arena.close_portal()
-	arena.set_theme(0, env)
+	arena.set_biome(GameData.CHAPTERS[chapter].biome, env)
 	pedestal.visible = true
 	show_hero(sel)
 	ui.show_menu()
@@ -135,7 +169,10 @@ func show_hero(i: int) -> void:
 	FX.burst(pedestal.global_position + Vector3(0, 1, 0), GameData.HEROES[key].color, 40, 4.0, 0.06, 0.9, -2.0)
 	ui.update_menu(key)
 	if showcase is CharModel:
-		showcase.action("Cheer")
+		if GameData.is_unlocked(key):
+			showcase.action("Cheer")
+		else:
+			showcase.silhouette(true)
 
 func upgrade_weapon() -> void:
 	var key: String = hero_keys[sel]
@@ -152,6 +189,18 @@ func upgrade_weapon() -> void:
 
 # ---------------- PARTIDA ----------------
 func start_run() -> void:
+	if not GameData.is_unlocked(hero_keys[sel]):
+		return
+	var story_key := "intro_%d" % chapter
+	if not story_key in GameData.story_seen:
+		GameData.story_seen.append(story_key)
+		GameData.save_game()
+		state = "story"
+		ui.show_story("Capítulo %d: %s" % [chapter + 1, GameData.CHAPTERS[chapter].name], GameData.CHAPTERS[chapter].intro, _begin_run)
+		return
+	_begin_run()
+
+func _begin_run() -> void:
 	get_tree().paused = false
 	clear_level()
 	if player:
@@ -170,7 +219,9 @@ func start_run() -> void:
 
 func load_level() -> void:
 	clear_level()
-	arena.set_theme(0 if level <= 5 else 1, env)
+	var ch: Dictionary = GameData.CHAPTERS[chapter]
+	arena.set_biome(ch.biome, env)
+	Sfx.play_music(ch.biome)
 	arena.gen_level(level)
 	player.global_position = Vector3(0, 0, Arena.H / 2 - 2)
 	player.rig.rotation.y = PI
@@ -178,24 +229,35 @@ func load_level() -> void:
 	arena.close_portal()
 	level_time = 0.0
 	var boss := level % 5 == 0
-	if boss:
+	var banner := "SALA %d" % level
+	var count: int = 3 + int(level * 0.3) + chapter
+	if level == GameData.MAX_LEVEL:
+		spawn_enemy("boss", Vector3(0, 0, -5), 0.6, true)
+		banner = ch.boss.to_upper()
+		count = 2
+	elif level % 10 == 0:
 		spawn_enemy("boss", Vector3(0, 0, -5), 0.6)
-	var count: int = (1 + level / 5) if boss else 3 + level
+		banner = "¡JEFE!"
+		count = 1 + chapter
+	elif boss:
+		spawn_enemy("champion", Vector3(0, 0, -5), 0.6)
+		banner = "¡CAMPEÓN!"
+		count = 2 + chapter
+	var g := difficulty()
 	for i in count:
 		var r := randf()
 		var t := "skeleton"
-		if r < 0.22 + level * 0.02:
+		if g > 1 and r < 0.18 + g * 0.006:
 			t = "skmage"
-		elif level > 2 and r < 0.38 + level * 0.03:
+		elif g > 5 and r < 0.3 + g * 0.008:
 			t = "brute"
-		elif level > 1 and r < 0.6:
+		elif g > 2 and r < 0.55:
 			t = "rogue"
 		spawn_enemy(t, arena.random_spawn(player.global_position, 5.0), i * 0.12)
 	state = "play"
-	Sfx.set_intense(boss)
 	Sfx.play("level", -4.0, 0.0)
 	ui.show_hud()
-	ui.show_banner("¡JEFE!" if boss else "NIVEL %d" % level, Color(1, 0.3, 0.25) if boss else ui.GOLD)
+	ui.show_banner(banner, Color(1, 0.3, 0.25) if boss else ui.GOLD)
 
 func clear_level() -> void:
 	for g in ["enemies", "projectiles", "coins", "minions"]:
@@ -218,11 +280,11 @@ func nearest_enemy(pos: Vector3, exclude := [], max_d := INF):
 			best = e
 	return best
 
-func spawn_enemy(type: String, pos: Vector3, delay := 0.0) -> void:
+func spawn_enemy(type: String, pos: Vector3, delay := 0.0, final := false) -> void:
 	var e = EnemyScript.new()
 	add_child(e)
 	e.global_position = pos
-	e.setup(self, type, level, delay)
+	e.setup(self, type, difficulty(), delay, final)
 	Sfx.play("roar" if type == "boss" else "spawn", -10.0 if type != "boss" else 0.0)
 	FX.ring(pos, 1.2 if type != "boss" else 2.5, Color(0.6, 0.3, 1), 0.8)
 	FX.burst(pos + Vector3.UP * 0.2, Color(0.6, 0.3, 1), 14, 3.0, 0.05, 0.7, 2.0)
@@ -290,15 +352,38 @@ func _physics_process(delta: float) -> void:
 			if p.enemy:
 				p.queue_free()
 	if portal_open and arena.in_portal(player.global_position):
-		if level >= GameData.MAX_LEVEL:
-			finish(true)
-		else:
-			show_choose()
+		room_cleared()
+
+func room_cleared() -> void:
+	state = "story"
+	GameData.record_progress(chapter, level)
+	var new_heroes := GameData.check_unlocks(chapter, level)
+	GameData.save_game()
+	_after_unlocks(new_heroes)
+
+func _after_unlocks(list: Array) -> void:
+	if list.size() > 0:
+		var h: String = list.pop_front()
+		Sfx.play("win", 0.0, 0.0)
+		ui.show_story("¡NUEVO HÉROE: %s!" % GameData.HEROES[h].name.to_upper(), [GameData.UNLOCK_STORY[h]],
+			_after_unlocks.bind(list), GameData.HEROES[h].color.lightened(0.3))
+		return
+	if level >= GameData.MAX_LEVEL:
+		ui.show_story("¡Capítulo %d completado!" % (chapter + 1), GameData.CHAPTERS[chapter].outro, finish.bind(true))
+	else:
+		show_choose()
 
 func _process(delta: float) -> void:
 	var target_pos: Vector3
 	var look: Vector3
-	if state == "menu":
+	if state == "title":
+		title_t += delta
+		if lineup:
+			for h in lineup.get_children():
+				h.animate(delta, 0.0)
+		target_pos = Vector3(sin(title_t * 0.12) * 6.0, 2.6, 2.0 + cos(title_t * 0.12) * 6.0)
+		look = Vector3(0, 1.4, 1.5)
+	elif state == "menu":
 		if showcase:
 			showcase.rotation.y += delta * 0.7
 			showcase.animate(delta, 0.0)
@@ -330,16 +415,17 @@ func show_choose() -> void:
 	var pool := []
 	for p in h.passives + ["dmg", "rate", "hp", "heal", "spd"]:
 		var d: Array = GameData.PASSIVES[p]
-		pool.append({"tag": "MEJORA", "icon": "+", "title": d[0], "desc": d[1], "color": Color(0.45, 0.75, 1.0),
-			"cb": player.apply_passive.bind(p), "w": 1.0})
+		var common: bool = p in ["dmg", "rate", "hp", "heal", "spd"]
+		pool.append({"tag": "MEJORA", "icon": p, "title": d[0], "desc": d[1], "rarity": "common" if common else "rare",
+			"color": Color(0.75, 0.8, 0.9) if common else Color(0.45, 0.75, 1.0), "cb": player.apply_passive.bind(p), "w": 1.0})
 	for a in player.abilities:
 		var info: Dictionary = GameData.ABILITIES[a.key]
 		if a.lvl == 0:
-			pool.append({"tag": "NUEVA HABILIDAD", "icon": info.short, "title": info.name, "desc": info.desc,
-				"color": ui.GOLD, "cb": _level_ability.bind(a), "w": 3.0})
+			pool.append({"tag": "NUEVA", "icon": a.key, "title": info.name, "desc": info.desc, "rarity": "legend",
+				"color": info.color, "cb": _level_ability.bind(a), "w": 3.0})
 		else:
-			pool.append({"tag": "HABILIDAD  Nv %d" % (a.lvl + 1), "icon": info.short, "title": info.name,
-				"desc": "Más daño y -15% de cooldown", "color": info.color, "cb": _level_ability.bind(a), "w": 1.6})
+			pool.append({"tag": "NIVEL %d" % (a.lvl + 1), "icon": a.key, "title": info.name, "rarity": "epic",
+				"desc": "Más daño y -15% de tiempo de recarga", "color": info.color, "cb": _level_ability.bind(a), "w": 1.6})
 	var picks := []
 	while picks.size() < 3 and pool.size() > 0:
 		var total := 0.0
@@ -375,6 +461,7 @@ func on_player_died() -> void:
 
 func finish(win: bool) -> void:
 	state = "end"
+	GameData.record_progress(chapter, level if win else level - 1)
 	if win:
 		Sfx.play("win", 0.0, 0.0)
 	GameData.coins += run_coins
