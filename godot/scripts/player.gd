@@ -22,6 +22,7 @@ var wave := 0
 var lifesteal := 0.0
 var thorns := 0.0
 var crit := 0.05
+var armor := 0.0
 
 var attack_cd := 0.0
 var spin_t := 0.0
@@ -46,14 +47,20 @@ func setup(m, k: String) -> void:
 	max_hp = h.hp * (1.0 + 0.1 * (wl - 1))
 	hp = max_hp
 	dmg = h.dmg * (1.0 + 0.2 * (wl - 1))
-	rate = h.rate
-	speed = h.speed
+	rate = h.rate * (1.0 + GameData.talent_value("t_ataque") / 100.0)
+	speed = h.speed * (1.0 + GameData.talent_value("t_agilidad") / 100.0)
+	max_hp *= 1.0 + GameData.talent_value("t_vida") / 100.0
+	hp = max_hp
+	dmg *= 1.0 + GameData.talent_value("t_fuerza") / 100.0
+	crit += GameData.talent_value("t_critico") / 100.0
+	armor = GameData.talent_value("t_armadura") / 100.0
 	if k == "nigromante":
 		lifesteal = 0.6
 	if k == "asesino":
 		crit = 0.2
 	for i in h.abilities.size():
-		abilities.append({"key": h.abilities[i], "lvl": 1 if i == 0 else 0, "t": 2.0})
+		var lv: int = (1 + int(GameData.mastery.get(k, 0))) if i == 0 else (1 if k in GameData.dual else 0)
+		abilities.append({"key": h.abilities[i], "lvl": lv, "t": 2.0})
 	collision_layer = 2
 	collision_mask = 1
 	motion_mode = CharacterBody3D.MOTION_MODE_FLOATING
@@ -358,6 +365,7 @@ func take_damage(d: float) -> void:
 		return
 	if shield_t > 0.0:
 		d *= 0.4
+	d *= 1.0 - armor
 	hp -= d
 	hurt_t = 0.15
 	invuln = 0.2

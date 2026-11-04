@@ -83,6 +83,24 @@ func _star(c: Vector2, r1: float, r2: float, n: int, rot := 0.0) -> void:
 
 var tex: Texture2D
 
+## Color propio de cada icono
+const COLORS := {
+	"lluvia": Color("7fd3ff"), "cargado": Color("49e0ff"), "meteoro": Color("ff7a2a"), "hielo": Color("8fe8ff"),
+	"torbellino": Color("ffd24a"), "grito": Color("ff9a3c"), "abanico": Color("e4e8f2"), "sombra": Color("b07cff"),
+	"esqueleto": Color("efe6c8"), "drenaje": Color("ff4f6d"), "multi": Color("6ad1ff"), "pierce": Color("59f0c8"),
+	"bounce": Color("ffd84a"), "diag": Color("8fb3ff"), "aoe": Color("ff8a3a"), "chain": Color("c58cff"),
+	"orb": Color("b38cff"), "arc": Color("ffe08a"), "wave": Color("7fe0ff"), "lifesteal": Color("ff4f6d"),
+	"thorns": Color("9be05a"), "crit": Color("ff5a5a"), "spdpas": Color("7cf0a0"), "dmg": Color("ff9a4a"),
+	"rate": Color("ffe066"), "hp": Color("ff5c7a"), "heal": Color("ff7ab8"), "spd": Color("7cf0a0"),
+	"t_vida": Color("ff5c7a"), "t_fuerza": Color("ff9a4a"), "t_ataque": Color("ffe066"), "t_agilidad": Color("7cf0a0"),
+	"t_critico": Color("ff5a5a"), "t_armadura": Color("8fb3ff"), "t_regen": Color("6af08a"), "t_suerte": Color("5ee07a"),
+	"t_codicia": Color("ffd24a"), "w_nivel": Color("d8e0f0"), "w_maestria": Color("c58cff"), "w_doble": Color("ffb44a"),
+	"nav_heroes": Color("ffffff"), "nav_jugar": Color("ffffff"), "nav_mejoras": Color("ffffff"),
+}
+
+static func color_of(k: String) -> Color:
+	return COLORS.get(k, Color.WHITE)
+
 func _draw() -> void:
 	if tex == null and ResourceLoader.exists("res://assets/icons/%s.svg" % key):
 		tex = load("res://assets/icons/%s.svg" % key)

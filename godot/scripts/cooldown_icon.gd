@@ -18,7 +18,7 @@ func _init() -> void:
 
 func setup(key: String, c: Color) -> void:
 	color = c
-	icon = SkillIcon.new(key, c.lightened(0.35))
+	icon = SkillIcon.new(key, SkillIcon.color_of(key))
 	add_child(icon)
 
 func set_state(f: float, lock: bool, level: int, s: float) -> void:

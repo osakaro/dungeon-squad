@@ -46,12 +46,13 @@ func setup(m, _type: String, level: int, delay := 0.0, final := false) -> void:
 	main = m
 	type = _type
 	var s: Array = STATS[type]
-	var sc := 1.0 + 0.13 * (level - 1)
+	var sc := 1.0 + 0.2 * (level - 1)
 	radius = s[0]
 	max_hp = s[1] * sc
 	hp = max_hp
 	speed = s[2]
-	dmg = s[3] * (1.0 + 0.05 * (level - 1))
+	dmg = s[3] * (1.0 + 0.09 * (level - 1))
+	speed *= 1.0 + min(0.4, 0.012 * (level - 1))
 	coins = s[4] + level / 4
 	is_boss = type in ["boss", "champion"]
 	display_name = NAMES.get(type, "")
@@ -166,7 +167,7 @@ func _physics_process(delta: float) -> void:
 			velocity = Vector3.ZERO
 			if d < 4.0:
 				velocity = -dir * speed * sm
-			if t > 2.4 / sm:
+			if t > 1.9 / sm:
 				rig.attack()
 				t = 0.0
 				var shots := 3 if g > 4 else 1

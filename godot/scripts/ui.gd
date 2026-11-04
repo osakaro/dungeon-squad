@@ -53,6 +53,13 @@ var story_btn: Button
 var story_lines := []
 var story_idx := 0
 var story_cb: Callable
+# mejoras
+var upg: Control
+var upg_tab := "talents"
+var upg_grid: GridContainer
+var upg_coins: Label
+var upg_tabs := {}
+var upg_title: Label
 # cinemáticas
 signal cine_next
 var cine: Control
@@ -71,6 +78,7 @@ func _ready() -> void:
 	_build_title()
 	_build_story()
 	_build_cine()
+	_build_upgrades()
 	hide_all()
 
 # ================= helpers =================
@@ -220,7 +228,7 @@ func spacer(expand_h := true) -> Control:
 	return c
 
 func hide_all() -> void:
-	for c in [hud, menu, choose, endscr, pause_scr, title_scr, story_scr, cine]:
+	for c in [hud, menu, choose, endscr, pause_scr, title_scr, story_scr, cine, upg]:
 		c.visible = false
 
 func _clear(c: Node) -> void:
@@ -439,8 +447,11 @@ func _build_menu() -> void:
 	m_play = btn("JUGAR", func(): main.start_run(), 30, true)
 	m_play.custom_minimum_size = Vector2(240, 66)
 	bottom.add_child(m_play)
-	m_upgrade = btn("Mejorar arma", func(): main.upgrade_weapon(), 16)
-	m_upgrade.custom_minimum_size = Vector2(330, 56)
+	m_upgrade = btn("MEJORAS", func(): show_upgrades("talents"), 20)
+	m_upgrade.icon = load("res://assets/icons/nav_mejoras.svg")
+	m_upgrade.expand_icon = true
+	m_upgrade.add_theme_constant_override("icon_max_width", 26)
+	m_upgrade.custom_minimum_size = Vector2(250, 60)
 	bottom.add_child(m_upgrade)
 
 func _chip(text: String) -> PanelContainer:
@@ -472,9 +483,10 @@ func update_menu(key: String) -> void:
 		var info: Dictionary = GameData.ABILITIES[h.abilities[i]]
 		var c := Panel.new()
 		c.custom_minimum_size = Vector2(34, 34)
-		c.add_theme_stylebox_override("panel", sb(Color(info.color.r * 0.25, info.color.g * 0.25, info.color.b * 0.25, 0.9), 17, info.color, 1, 0))
+		var icc2 := SkillIcon.color_of(h.abilities[i])
+		c.add_theme_stylebox_override("panel", sb(Color(icc2.r * 0.22, icc2.g * 0.22, icc2.b * 0.28, 0.95), 17, icc2, 2, 0))
 		c.tooltip_text = info.name + ": " + info.desc
-		var ic := SkillIcon.new(h.abilities[i], info.color.lightened(0.3))
+		var ic := SkillIcon.new(h.abilities[i], SkillIcon.color_of(h.abilities[i]))
 		full(ic)
 		ic.offset_left = 6
 		ic.offset_top = 6
@@ -485,9 +497,6 @@ func update_menu(key: String) -> void:
 	var ch: Dictionary = GameData.CHAPTERS[main.chapter]
 	m_chapter.text = "Capítulo %d  -  %s" % [main.chapter + 1, ch.name]
 	m_chapter_best.text = "Mejor sala: %d / %d" % [int(GameData.chapter_best.get(main.chapter, 0)), GameData.MAX_LEVEL]
-	var cost := 40 * wl
-	m_upgrade.text = "Mejorar arma  -  %d monedas" % cost
-	m_upgrade.disabled = GameData.coins < cost or locked
 	m_coins.text = str(GameData.coins)
 
 # ================= CARTAS =================
@@ -543,12 +552,16 @@ func show_choose(options: Array) -> void:
 		holder.add_child(b)
 		var circ := Panel.new()
 		circ.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		var cs := sb(Color(rc.r * 0.18, rc.g * 0.18, rc.b * 0.18), 60, Color(rc.r, rc.g, rc.b, 0.7), 2, 0)
+		var icc := SkillIcon.color_of(o.icon)
+		var cs := sb(Color(icc.r * 0.2, icc.g * 0.2, icc.b * 0.25), 60, Color(icc.r, icc.g, icc.b, 0.8), 3, 0)
+		cs.shadow_color = Color(icc.r, icc.g, icc.b, 0.25)
+		cs.shadow_size = 12
 		circ.add_theme_stylebox_override("panel", cs)
 		circ.position = Vector2(50, 34)
 		circ.size = Vector2(120, 120)
 		b.add_child(circ)
-		var icon := SkillIcon.new(o.icon, o.color.lightened(0.25))
+		var ic_col := SkillIcon.color_of(o.icon)
+		var icon := SkillIcon.new(o.icon, ic_col)
 		icon.position = Vector2(24, 24)
 		icon.size = Vector2(72, 72)
 		circ.add_child(icon)
@@ -872,3 +885,161 @@ func _reset_joy() -> void:
 	if joy_base:
 		joy_base.visible = false
 		joy_knob.visible = false
+
+# ================= MEJORAS (Personaje / Arma) =================
+func _build_upgrades() -> void:
+	upg = full(Control.new())
+	add_child(upg)
+	var bg := ColorRect.new()
+	bg.color = Color(0.01, 0.01, 0.04, 0.72)
+	full(bg)
+	upg.add_child(bg)
+	var c := CenterContainer.new()
+	full(c)
+	upg.add_child(c)
+	var panel := PanelContainer.new()
+	panel.add_theme_stylebox_override("panel", sb(Color(0.07, 0.08, 0.13, 0.97), 28, Color(1, 1, 1, 0.07), 1, 24))
+	panel.custom_minimum_size = Vector2(980, 600)
+	c.add_child(panel)
+	var v := VBoxContainer.new()
+	v.add_theme_constant_override("separation", 16)
+	panel.add_child(v)
+	var head := HBoxContainer.new()
+	head.add_theme_constant_override("separation", 12)
+	v.add_child(head)
+	upg_title = lbl("Mejoras", 36, Color.WHITE, true)
+	head.add_child(upg_title)
+	head.add_child(spacer())
+	var cp := PanelContainer.new()
+	var cst := sb(Color(1, 1, 1, 0.06), 40, Color(0, 0, 0, 0), 0, 6)
+	cst.content_margin_left = 10
+	cst.content_margin_right = 16
+	cp.add_theme_stylebox_override("panel", cst)
+	var ch := hbox(8)
+	ch.add_child(coin_icon(22))
+	upg_coins = lbl("0", 19, Color(1, 0.9, 0.6))
+	ch.add_child(upg_coins)
+	cp.add_child(ch)
+	cp.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	head.add_child(cp)
+	head.add_child(round_btn("X", func(): show_menu(), 44))
+	var tabs := HBoxContainer.new()
+	tabs.add_theme_constant_override("separation", 10)
+	v.add_child(tabs)
+	for t in [["talents", "Personaje"], ["weapon", "Arma"]]:
+		var b := btn(t[1], show_upgrades.bind(t[0]), 18)
+		b.custom_minimum_size = Vector2(170, 44)
+		tabs.add_child(b)
+		upg_tabs[t[0]] = b
+	var sc := ScrollContainer.new()
+	sc.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	sc.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	v.add_child(sc)
+	upg_grid = GridContainer.new()
+	upg_grid.columns = 3
+	upg_grid.add_theme_constant_override("h_separation", 14)
+	upg_grid.add_theme_constant_override("v_separation", 14)
+	upg_grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	sc.add_child(upg_grid)
+
+func show_upgrades(tab: String) -> void:
+	hide_all()
+	upg.visible = true
+	if upg_tab != tab or upg.modulate.a < 1.0:
+		_fade_in(upg, 0.2)
+	upg_tab = tab
+	refresh_upgrades()
+
+func _upg_card(icon: String, title: String, desc: String, lvl: int, maxl: int, cost: int, cb: Callable) -> Control:
+	var col := SkillIcon.color_of(icon)
+	var card := PanelContainer.new()
+	card.add_theme_stylebox_override("panel", sb(Color(1, 1, 1, 0.04), 20, Color(col.r, col.g, col.b, 0.25), 1, 14))
+	card.custom_minimum_size = Vector2(300, 0)
+	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var h := HBoxContainer.new()
+	h.add_theme_constant_override("separation", 14)
+	card.add_child(h)
+	var circ := Panel.new()
+	circ.custom_minimum_size = Vector2(64, 64)
+	circ.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	var cs := sb(Color(col.r * 0.2, col.g * 0.2, col.b * 0.25), 32, col, 2, 0)
+	circ.add_theme_stylebox_override("panel", cs)
+	var ic := SkillIcon.new(icon, col)
+	ic.position = Vector2(12, 12)
+	ic.size = Vector2(40, 40)
+	circ.add_child(ic)
+	h.add_child(circ)
+	var v := VBoxContainer.new()
+	v.add_theme_constant_override("separation", 4)
+	v.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	h.add_child(v)
+	var top := HBoxContainer.new()
+	top.add_child(lbl(title, 19, Color.WHITE, true))
+	top.add_child(spacer())
+	top.add_child(lbl("%d/%d" % [lvl, maxl], 14, GREY))
+	v.add_child(top)
+	v.add_child(wrapl(lbl(desc, 13, GREY), 190))
+	var dots := HBoxContainer.new()
+	dots.add_theme_constant_override("separation", 3)
+	for i in maxl:
+		var d := Panel.new()
+		d.custom_minimum_size = Vector2(min(18.0, 170.0 / maxl - 3), 5)
+		d.add_theme_stylebox_override("panel", sb(col if i < lvl else Color(1, 1, 1, 0.12), 3, Color(0, 0, 0, 0), 0, 0))
+		dots.add_child(d)
+	v.add_child(dots)
+	var maxed := lvl >= maxl
+	var b := btn("MÁXIMO" if maxed else "%d monedas" % cost, cb, 15, not maxed)
+	b.custom_minimum_size = Vector2(0, 36)
+	b.disabled = maxed or GameData.coins < cost
+	v.add_child(b)
+	return card
+
+func refresh_upgrades() -> void:
+	upg_coins.text = str(GameData.coins)
+	m_coins.text = str(GameData.coins)
+	for k in upg_tabs:
+		var on: bool = k == upg_tab
+		var st := sb(GOLD if on else Color(1, 1, 1, 0.08), 40, Color(0, 0, 0, 0), 0, 8)
+		upg_tabs[k].add_theme_stylebox_override("normal", st)
+		upg_tabs[k].add_theme_color_override("font_color", Color(0.15, 0.08, 0.02) if on else Color.WHITE)
+	_clear(upg_grid)
+	if upg_tab == "talents":
+		upg_title.text = "Mejoras del personaje"
+		for k in GameData.TALENTS:
+			var t: Array = GameData.TALENTS[k]
+			var lv := GameData.talent(k)
+			var cur: String = t[1] % (lv * t[2])
+			var nxt: String = t[1] % ((lv + 1) * t[2])
+			var desc := ("Ahora: " + cur + "\nSiguiente: " + nxt) if lv < t[3] else ("Ahora: " + cur)
+			upg_grid.add_child(_upg_card(k, t[0], desc, lv, t[3], GameData.talent_cost(k), _buy_talent.bind(k)))
+	else:
+		var key: String = main.hero_keys[main.sel]
+		var h: Dictionary = GameData.HEROES[key]
+		upg_title.text = "Arma de " + h.name
+		var wl := GameData.wl(key)
+		upg_grid.add_child(_upg_card("w_nivel", "Nivel de arma", "Ahora: +%d%% daño, +%d%% vida\nCada nivel: +20%% daño, +10%% vida" % [20 * (wl - 1), 10 * (wl - 1)],
+			wl - 1, 20, GameData.weapon_cost(key), _buy.bind("weapon", key)))
+		var ml := int(GameData.mastery.get(key, 0))
+		var ab: Dictionary = GameData.ABILITIES[h.abilities[0]]
+		upg_grid.add_child(_upg_card("w_maestria", "Maestría", "%s empieza en nivel %d" % [ab.name, 1 + ml + (1 if ml < 2 else 0)] if ml < 2 else "%s empieza en nivel 3" % ab.name,
+			ml, 2, GameData.mastery_cost(key), _buy.bind("mastery", key)))
+		var ab2: Dictionary = GameData.ABILITIES[h.abilities[1]]
+		var has := key in GameData.dual
+		upg_grid.add_child(_upg_card("w_doble", "Doble técnica", "%s desbloqueada desde la primera sala" % ab2.name,
+			1 if has else 0, 1, GameData.DUAL_COST, _buy.bind("dual", key)))
+		if not GameData.is_unlocked(key):
+			for cc in upg_grid.get_children():
+				cc.modulate.a = 0.4
+				for b in cc.find_children("*", "Button", true, false):
+					b.disabled = true
+
+func _buy_talent(k: String) -> void:
+	if GameData.buy_talent(k):
+		Sfx.play("upgrade", -4.0, 0.0)
+		refresh_upgrades()
+
+func _buy(kind: String, h: String) -> void:
+	if GameData.buy(kind, h):
+		Sfx.play("upgrade", -4.0, 0.0)
+		main.show_hero(main.sel)
+		show_upgrades(upg_tab)

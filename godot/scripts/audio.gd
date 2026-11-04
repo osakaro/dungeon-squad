@@ -109,11 +109,14 @@ func _make_sounds() -> void:
 		if ResourceLoader.exists(path):
 			sounds[k] = load(path)
 
+const ALLOWED := ["coin", "click", "pick", "upgrade"]
+
 const MIN_GAP := {"hit": 110, "crit": 110, "kill": 90, "arrow": 90, "dagger": 90, "slash": 90, "fire": 90, "bolt": 90,
 	"eshot": 140, "coin": 70, "boom": 120, "wave": 120}
 
 func play(name: String, vol_db := 0.0, pitch_var := 0.08) -> void:
-	if muted or not sounds.has(name):
+	# solo monedas e interfaz: el resto se quitó porque cansaba
+	if muted or not sounds.has(name) or not name in ALLOWED:
 		return
 	var now := Time.get_ticks_msec()
 	if now - int(last_play.get(name, 0)) < int(MIN_GAP.get(name, 60)):
@@ -188,7 +191,7 @@ func _start(kind: String) -> void:
 		music.volume_db = -40.0
 		music.play()
 		music.stream_paused = not GameData.music_on)
-	tw.tween_property(music, "volume_db", -13.0, 1.5)
+	tw.tween_property(music, "volume_db", -21.0, 1.5)
 
 func set_music_on(on: bool) -> void:
 	GameData.music_on = on

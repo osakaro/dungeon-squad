@@ -61,8 +61,13 @@ El nigromante **Malakar** ha despertado y su ejército de esqueletos invade el r
 - Las **salas se generan al azar**: columnas, cajas y barriles que bloquean el paso y los disparos.
 - **Cartas de mejora** con rareza (común, rara, épica y legendaria), iconos dibujados y animaciones.
 - **Pantalla de inicio** con el logo y textos de historia con efecto máquina de escribir.
-- **Mejora permanente de armas** con las monedas. El progreso se guarda.
-- **Sonido generado por código:** efectos para cada ataque, golpe, explosión, moneda y habilidad, más música ambiental tranquila y distinta en cada zona. La música y los efectos se pueden quitar por separado desde la pausa.
+- **Pantalla de MEJORAS** (estilo roguelike) con dos pestañas:
+  - **Personaje** (sirve para todos los héroes): Vitalidad, Fuerza, Destreza, Agilidad, Precisión, Armadura, Regeneración, Suerte y Codicia.
+  - **Arma** (de cada héroe): nivel de arma, Maestría (la habilidad principal empieza a más nivel) y Doble técnica (segunda habilidad desde el inicio).
+- **Dificultad más alta:** más enemigos, más vida y daño en cada sala; para avanzar hay que ir mejorando.
+
+![Mejoras](../docs/godot-mejoras.png)
+- **Sonido discreto:** solo monedas e interfaz, con música ambiental baja y distinta en cada zona. Se puede quitar desde la pausa.
 - **Efectos:**
   - números de daño (críticos en amarillo);
   - temblor de cámara y retroceso de los enemigos al golpearlos;

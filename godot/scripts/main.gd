@@ -236,6 +236,8 @@ func load_level() -> void:
 	arena.set_biome(ch.biome, env)
 	Sfx.play_music(ch.biome)
 	arena.gen_level(level)
+	if level > 1 and GameData.talent("t_regen") > 0:
+		player.heal(player.max_hp * GameData.talent_value("t_regen") / 100.0)
 	player.global_position = Vector3(0, 0, Arena.H / 2 - 2)
 	player.rig.rotation.y = PI
 	portal_open = false
@@ -243,7 +245,7 @@ func load_level() -> void:
 	level_time = 0.0
 	var boss := level % 5 == 0
 	var banner := "SALA %d" % level
-	var count: int = 3 + int(level * 0.3) + chapter
+	var count: int = 4 + int(level * 0.35) + chapter * 2
 	if level == GameData.MAX_LEVEL:
 		spawn_enemy("boss", Vector3(0, 0, -5), 0.6, true)
 		banner = ch.boss.to_upper()
@@ -336,7 +338,7 @@ func spawn_coins(pos: Vector3, value: int) -> void:
 		c.setup(self, value / n + (1 if i < value % n else 0))
 
 func collect_coin(v: int, pos: Vector3) -> void:
-	run_coins += v
+	run_coins += int(ceil(v * (1.0 + GameData.talent_value("t_codicia") / 100.0)))
 	Sfx.play("coin", -14.0, 0.1)
 	FX.burst(pos, Color(1, 0.8, 0.2), 5, 2.0, 0.04, 0.3, 0)
 
@@ -445,6 +447,10 @@ func show_choose() -> void:
 		elif a.lvl < player.ABILITY_MAX:
 			pool.append({"tag": "NIVEL %d" % (a.lvl + 1), "icon": a.key, "title": info.name, "rarity": "epic",
 				"desc": "Más daño y -15% de tiempo de recarga", "color": info.color, "cb": _level_ability.bind(a), "w": 1.6})
+	var luck := 1.0 + GameData.talent_value("t_suerte") / 100.0
+	for o in pool:
+		if o.rarity != "common":
+			o.w *= luck
 	var picks := []
 	while picks.size() < 3 and pool.size() > 0:
 		var total := 0.0

@@ -97,6 +97,65 @@ const PASSIVES := {
 	"spd": ["Botas ligeras", "+15% velocidad de movimiento"],
 }
 
+## Mejoras permanentes del personaje (valen para todos los héroes)
+## [nombre, descripción con %s, valor por nivel, nivel máximo, coste base]
+const TALENTS := {
+	"t_vida": ["Vitalidad", "+%d%% vida máxima", 8, 10, 30],
+	"t_fuerza": ["Fuerza", "+%d%% daño", 6, 10, 35],
+	"t_ataque": ["Destreza", "+%d%% velocidad de ataque", 4, 8, 40],
+	"t_agilidad": ["Agilidad", "+%d%% velocidad de movimiento", 3, 6, 30],
+	"t_critico": ["Precisión", "+%d%% probabilidad de crítico", 2, 8, 45],
+	"t_armadura": ["Armadura", "-%d%% daño recibido", 3, 8, 50],
+	"t_regen": ["Regeneración", "Recuperas %d%% de vida en cada sala", 2, 5, 60],
+	"t_suerte": ["Suerte", "+%d%% cartas raras, épicas y legendarias", 10, 5, 55],
+	"t_codicia": ["Codicia", "+%d%% monedas", 10, 5, 40],
+}
+var talents := {}
+var mastery := {}      # héroe -> nivel inicial extra de su habilidad principal (0-2)
+var dual := []         # héroes con la segunda habilidad desbloqueada desde el inicio
+
+func talent(k: String) -> int:
+	return int(talents.get(k, 0))
+
+func talent_value(k: String) -> float:
+	return talent(k) * float(TALENTS[k][2])
+
+func talent_cost(k: String) -> int:
+	return int(TALENTS[k][4] * pow(1.45, talent(k)))
+
+func buy_talent(k: String) -> bool:
+	var c := talent_cost(k)
+	if coins < c or talent(k) >= int(TALENTS[k][3]):
+		return false
+	coins -= c
+	talents[k] = talent(k) + 1
+	save_game()
+	return true
+
+func weapon_cost(h: String) -> int:
+	return int(40 * pow(1.5, wl(h) - 1))
+
+func mastery_cost(h: String) -> int:
+	return 150 * (int(mastery.get(h, 0)) + 1)
+
+const DUAL_COST := 300
+
+func buy(kind: String, h: String) -> bool:
+	var c := 0
+	match kind:
+		"weapon": c = weapon_cost(h)
+		"mastery": c = mastery_cost(h) if int(mastery.get(h, 0)) < 2 else 999999
+		"dual": c = DUAL_COST if not h in dual else 999999
+	if coins < c:
+		return false
+	coins -= c
+	match kind:
+		"weapon": weapon_level[h] = wl(h) + 1
+		"mastery": mastery[h] = int(mastery.get(h, 0)) + 1
+		"dual": dual.append(h)
+	save_game()
+	return true
+
 var coins := 0
 var weapon_level := {}
 var unlocked := ["guerrero"]
@@ -169,6 +228,9 @@ func load_game() -> void:
 		story_seen = cfg.get_value("save", "story_seen", [])
 		music_on = bool(cfg.get_value("save", "music_on", true))
 		sfx_on = bool(cfg.get_value("save", "sfx_on", true))
+		talents = cfg.get_value("save", "talents", {})
+		mastery = cfg.get_value("save", "mastery", {})
+		dual = cfg.get_value("save", "dual", [])
 
 func save_game() -> void:
 	var cfg := ConfigFile.new()
@@ -180,4 +242,7 @@ func save_game() -> void:
 	cfg.set_value("save", "story_seen", story_seen)
 	cfg.set_value("save", "music_on", music_on)
 	cfg.set_value("save", "sfx_on", sfx_on)
+	cfg.set_value("save", "talents", talents)
+	cfg.set_value("save", "mastery", mastery)
+	cfg.set_value("save", "dual", dual)
 	cfg.save(SAVE_PATH)
