@@ -261,7 +261,7 @@ func hurt(amount: float, force_crit := false) -> void:
 		amount *= 2.2
 	hp -= amount
 	flash = 0.1
-	Sfx.play("crit" if crit else "hit", -6.0 if crit else -10.0)
+	Sfx.play("crit" if crit else "hit", -12.0 if crit else -16.0)
 	if rig is CharModel and not is_boss and randf() < 0.3:
 		rig.hit()
 	FX.number(global_position + Vector3.UP * (1.5 if is_boss else 0.0), amount, Color(1, 0.85, 0.2) if crit else Color.WHITE, crit)
@@ -287,7 +287,7 @@ func die() -> void:
 		FX.ring(global_position, 5.0, Color(1, 0.5, 0.1), 0.8)
 		main.hit_stop(0.25)
 	main.spawn_coins(global_position, coins)
-	Sfx.play("roar" if is_boss else "kill", 0.0 if is_boss else -6.0)
+	Sfx.play("roar" if is_boss else "kill", -2.0 if is_boss else -12.0)
 	if rig is CharModel:
 		var xf := rig.global_transform
 		remove_child(rig)

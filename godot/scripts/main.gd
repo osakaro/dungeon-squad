@@ -125,13 +125,13 @@ func _build_pedestal() -> void:
 	rim.mesh = t
 	rim.scale = Vector3(1, 0.3, 1)
 	rim.position.y = 0.3
-	rim.material_override = Rig.glow_mat(Color(1, 0.75, 0.3), 3.0)
+	rim.material_override = Rig.glow_mat(Color(1, 0.75, 0.3), 1.0)
 	pedestal.add_child(rim)
 	spot = SpotLight3D.new()
 	spot.position = Vector3(0, 6, 1.5)
 	spot.rotation_degrees = Vector3(-75, 0, 0)
 	spot.spot_angle = 28.0
-	spot.light_energy = 3.0
+	spot.light_energy = 2.0
 	spot.spot_range = 12.0
 	spot.shadow_enabled = true
 	pedestal.add_child(spot)
@@ -257,7 +257,7 @@ func load_level() -> void:
 	state = "play"
 	Sfx.play("level", -4.0, 0.0)
 	ui.show_hud()
-	ui.show_banner(banner, Color(1, 0.3, 0.25) if boss else ui.GOLD)
+	ui.show_banner(banner, Color(1, 0.55, 0.5) if boss else Color.WHITE)
 
 func clear_level() -> void:
 	for g in ["enemies", "projectiles", "coins", "minions"]:
@@ -297,13 +297,13 @@ func shoot(from: Vector3, vel: Vector3, opts: Dictionary) -> void:
 	p.setup(self, opts)
 	p.orient()
 	if opts.get("enemy", false):
-		Sfx.play("eshot", -6.0)
+		Sfx.play("eshot", -14.0)
 	else:
-		Sfx.play({"arrow": "arrow", "big": "arrow", "fire": "fire", "dagger": "dagger", "bolt": "bolt", "wave": "wave"}.get(opts.get("kind", "arrow"), "arrow"), -4.0)
+		Sfx.play({"arrow": "arrow", "big": "arrow", "fire": "fire", "dagger": "dagger", "bolt": "bolt", "wave": "wave"}.get(opts.get("kind", "arrow"), "arrow"), -13.0)
 
 func explode(pos: Vector3, r: float, dmg: float, color: Color, extra := Callable(), fx := true) -> void:
 	if fx:
-		Sfx.play("boom", -3.0)
+		Sfx.play("boom", -9.0)
 		FX.ring(pos, r, color)
 		FX.burst(pos + Vector3.UP * 0.4, color, 24, r * 2.5, 0.08, 0.5, -4.0)
 	for e in get_enemies():
@@ -324,7 +324,7 @@ func spawn_coins(pos: Vector3, value: int) -> void:
 
 func collect_coin(v: int, pos: Vector3) -> void:
 	run_coins += v
-	Sfx.play("coin", -8.0, 0.15)
+	Sfx.play("coin", -14.0, 0.1)
 	FX.burst(pos, Color(1, 0.8, 0.2), 5, 2.0, 0.04, 0.3, 0)
 
 func spawn_minion(pos: Vector3, dmg: float, duration: float) -> void:
@@ -387,8 +387,8 @@ func _process(delta: float) -> void:
 		if showcase:
 			showcase.rotation.y += delta * 0.7
 			showcase.animate(delta, 0.0)
-		target_pos = pedestal.global_position + Vector3(-1.5, 2.0, 5.2)
-		look = pedestal.global_position + Vector3(-1.5, 1.0, 0)
+		target_pos = pedestal.global_position + Vector3(0, 2.3, 6.4)
+		look = pedestal.global_position + Vector3(0, 1.25, 0)
 	elif player:
 		var pp: Vector3 = player.global_position
 		var vp := get_viewport().get_visible_rect().size

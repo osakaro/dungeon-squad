@@ -83,16 +83,16 @@ func seq(notes: Array, step: float, wave := 3, vol := 0.35) -> AudioStreamWAV:
 	return mix(parts)
 
 func _make_sounds() -> void:
-	sounds["arrow"] = tone(0.12, 1800, 500, 0, 0.25, 0.7, 0.002, 0.5)
+	sounds["arrow"] = tone(0.1, 900, 400, 0, 0.18, 0.5, 0.004, 0.25)
 	sounds["fire"] = mix([tone(0.3, 300, 120, 2, 0.25, 0.6, 0.01, 0.2), tone(0.2, 600, 200, 0, 0.2)])
-	sounds["dagger"] = tone(0.09, 2500, 900, 0, 0.2, 0.8, 0.001, 0.7)
+	sounds["dagger"] = tone(0.08, 1200, 600, 0, 0.15, 0.6, 0.003, 0.3)
 	sounds["bolt"] = mix([tone(0.25, 900, 300, 3, 0.25), tone(0.25, 1350, 450, 0, 0.12)])
-	sounds["slash"] = tone(0.16, 1200, 300, 0, 0.35, 0.9, 0.002, 0.35)
+	sounds["slash"] = tone(0.14, 700, 250, 0, 0.25, 0.7, 0.004, 0.18)
 	sounds["wave"] = tone(0.3, 500, 150, 2, 0.25, 0.5, 0.01, 0.3)
-	sounds["hit"] = mix([tone(0.08, 180, 60, 1, 0.3, 0.5, 0.001, 0.5), tone(0.05, 900, 400, 0, 0.15)])
-	sounds["crit"] = mix([tone(0.12, 220, 70, 1, 0.35, 0.5, 0.001, 0.5), tone(0.25, 1760, 1700, 0, 0.18)])
-	sounds["kill"] = mix([tone(0.25, 300, 60, 2, 0.3, 0.6, 0.002, 0.3), tone(0.15, 600, 900, 3, 0.15)])
-	sounds["boom"] = mix([tone(0.6, 120, 30, 0, 0.6), tone(0.6, 1, 1, 0, 0.55, 1.0, 0.002, 0.08)])
+	sounds["hit"] = tone(0.07, 160, 90, 0, 0.35, 0.15, 0.002, 0.2)
+	sounds["crit"] = mix([tone(0.09, 180, 90, 0, 0.35, 0.15, 0.002, 0.2), tone(0.18, 1320, 1300, 0, 0.08)])
+	sounds["kill"] = mix([tone(0.18, 220, 90, 0, 0.3, 0.3, 0.004, 0.15), tone(0.12, 520, 700, 3, 0.08)])
+	sounds["boom"] = mix([tone(0.5, 110, 35, 0, 0.45), tone(0.4, 1, 1, 0, 0.25, 1.0, 0.004, 0.05)])
 	sounds["eshot"] = tone(0.18, 700, 250, 3, 0.18)
 	sounds["hurt"] = mix([tone(0.22, 260, 90, 1, 0.3), tone(0.15, 1, 1, 0, 0.3, 1.0, 0.001, 0.2)])
 	sounds["coin"] = seq([1976.0, 2637.0], 0.06, 0, 0.25)
@@ -112,11 +112,14 @@ func _make_sounds() -> void:
 	sounds["win"] = seq([523.0, 659.0, 784.0, 1047.0, 784.0, 1047.0, 1319.0], 0.12, 3, 0.3)
 	sounds["upgrade"] = seq([784.0, 988.0, 1175.0, 1568.0], 0.07, 0, 0.25)
 
+const MIN_GAP := {"hit": 110, "crit": 110, "kill": 90, "arrow": 90, "dagger": 90, "slash": 90, "fire": 90, "bolt": 90,
+	"eshot": 140, "coin": 70, "boom": 120, "wave": 120}
+
 func play(name: String, vol_db := 0.0, pitch_var := 0.08) -> void:
 	if muted or not sounds.has(name):
 		return
 	var now := Time.get_ticks_msec()
-	if now - int(last_play.get(name, 0)) < 35:
+	if now - int(last_play.get(name, 0)) < int(MIN_GAP.get(name, 60)):
 		return
 	last_play[name] = now
 	var p: AudioStreamPlayer = players[next]

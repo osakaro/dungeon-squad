@@ -3,6 +3,7 @@
 Versión en **Godot 4** del juego, con personajes 3D animados (KayKit), iluminación dinámica, sombras, bloom, partículas, física, efectos de sonido y música.
 
 ![Título](../docs/godot-titulo.png)
+![Menú](../docs/godot-menu.png)
 
 ## ▶️ Cómo abrirlo
 
@@ -111,5 +112,7 @@ godot/
 - [ ] Árbol de talentos permanente
 
 ## 🙏 Créditos
+
+- Fuentes: **Fredoka** y **Lilita One** (Google Fonts, SIL Open Font License).
 
 - Modelos y animaciones: **KayKit Adventurers** y **KayKit Skeletons**, de [Kay Lousberg](https://www.kaylousberg.com), con licencia CC0. Las licencias están en `assets/kaykit/`.

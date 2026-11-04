@@ -88,8 +88,9 @@ static func number(pos: Vector3, value: float, color: Color, big := false) -> vo
 	l.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	l.no_depth_test = true
 	l.pixel_size = 0.006
-	l.font_size = 72 if big else 48
-	l.outline_size = 14
+	l.font_size = 60 if big else 40
+	l.outline_size = 10
+	l.font = preload("res://assets/fonts/LilitaOne.ttf")
 	l.modulate = color
 	l.outline_modulate = Color(0, 0, 0, 0.85)
 	root.add_child(l)

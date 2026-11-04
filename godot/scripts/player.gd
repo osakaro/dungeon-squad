@@ -33,6 +33,8 @@ var abilities := []
 var orbs := []
 var orb_angle := 0.0
 var shield_mesh: MeshInstance3D
+var hp_fg: MeshInstance3D
+var hp_lbl: Label3D
 
 const KIND := {"arquero": "arrow", "mago": "fire", "asesino": "dagger", "nigromante": "bolt"}
 
@@ -74,6 +76,7 @@ func setup(m, k: String) -> void:
 	shield_mesh.position.y = 0.9
 	shield_mesh.visible = false
 	add_child(shield_mesh)
+	_build_hp_bar()
 	# círculo bajo el héroe
 	var ring := MeshInstance3D.new()
 	var t := TorusMesh.new()
@@ -84,6 +87,36 @@ func setup(m, k: String) -> void:
 	ring.position.y = 0.03
 	ring.material_override = FX.flat_mat(Color(h.color.r, h.color.g, h.color.b, 0.7), 1.5)
 	add_child(ring)
+
+func _build_hp_bar() -> void:
+	for i in 2:
+		var q := QuadMesh.new()
+		q.size = Vector2(1.06, 0.15) if i == 0 else Vector2(1.0, 0.1)
+		var m := StandardMaterial3D.new()
+		m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		m.billboard_mode = BaseMaterial3D.BILLBOARD_ENABLED
+		m.billboard_keep_scale = true
+		m.no_depth_test = true
+		m.render_priority = 2 + i
+		m.albedo_color = Color(0.05, 0.05, 0.08) if i == 0 else Color(0.35, 0.9, 0.4)
+		var mi := MeshInstance3D.new()
+		mi.mesh = q
+		mi.material_override = m
+		mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		mi.position.y = 2.25
+		add_child(mi)
+		if i == 1:
+			hp_fg = mi
+	hp_lbl = Label3D.new()
+	hp_lbl.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	hp_lbl.no_depth_test = true
+	hp_lbl.font = preload("res://assets/fonts/LilitaOne.ttf")
+	hp_lbl.font_size = 34
+	hp_lbl.outline_size = 8
+	hp_lbl.pixel_size = 0.006
+	hp_lbl.position.y = 2.48
+	hp_lbl.render_priority = 4
+	add_child(hp_lbl)
 
 func cd_of(a: Dictionary) -> float:
 	return GameData.ABILITIES[a.key].cd * pow(0.85, max(0, a.lvl - 1))
@@ -137,7 +170,7 @@ func _physics_process(delta: float) -> void:
 			spin_tick = 0.25
 			main.explode(global_position, 2.4, dmg * 0.5, Color(1, 0.95, 0.7), Callable(), false)
 			FX.slash(global_position, randf() * TAU, 2.4, Color(1, 0.95, 0.7))
-			Sfx.play("slash", -6.0)
+			Sfx.play("slash", -14.0)
 	# escudo / daño recibido
 	shield_t -= delta
 	hurt_t -= delta
@@ -157,6 +190,8 @@ func _physics_process(delta: float) -> void:
 				e.orb_cd = 0.4
 				e.hurt(dmg * 0.45)
 	rig.animate(delta, velocity.length())
+	hp_fg.scale.x = max(0.001, hp / max_hp)
+	hp_lbl.text = str(int(ceil(hp)))
 
 # ---------------- ataque básico ----------------
 func attack() -> void:
@@ -170,7 +205,7 @@ func attack() -> void:
 	rig.attack()
 	if key == "guerrero":
 		FX.slash(global_position, a, melee_range, Color(1, 0.95, 0.75))
-		Sfx.play("slash", -4.0)
+		Sfx.play("slash", -12.0)
 		for e in main.get_enemies():
 			if not e.is_active():
 				continue
@@ -326,7 +361,7 @@ func take_damage(d: float) -> void:
 	hp -= d
 	hurt_t = 0.15
 	invuln = 0.2
-	Sfx.play("hurt", -2.0)
+	Sfx.play("hurt", -8.0)
 	FX.number(global_position, d, Color(1, 0.3, 0.3))
 	FX.shake(0.18)
 	if hp <= 0.0:
