@@ -33,6 +33,11 @@ var level_time := 0.0
 
 func _ready() -> void:
 	randomize()
+	if GameData.low:
+		get_tree().node_added.connect(_low_node)
+		get_viewport().msaa_3d = Viewport.MSAA_DISABLED
+		get_viewport().screen_space_aa = Viewport.SCREEN_SPACE_AA_DISABLED
+		RenderingServer.directional_shadow_atlas_set_size(1024, true)
 	# en móviles/tablets la interfaz se ve más grande
 	if DisplayServer.is_touchscreen_available():
 		get_window().content_scale_size = Vector2i(1100, 600)
@@ -84,6 +89,15 @@ func change_chapter(d: int) -> void:
 	arena.set_biome(GameData.CHAPTERS[chapter].biome, env)
 	ui.update_menu(hero_keys[sel])
 
+## En modo rendimiento: solo se mantienen unas pocas luces y ninguna sombra de luz puntual
+func _low_node(n: Node) -> void:
+	if n is OmniLight3D or n is SpotLight3D:
+		n.shadow_enabled = false
+		if not n.has_meta("keep"):
+			n.visible = false
+	elif n is GeometryInstance3D and (n is CPUParticles3D or n is MultiMeshInstance3D):
+		n.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+
 func _build_env() -> void:
 	var we := WorldEnvironment.new()
 	env = Environment.new()
@@ -91,14 +105,16 @@ func _build_env() -> void:
 	env.background_color = Color(0.02, 0.02, 0.04)
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
 	env.ambient_light_color = Color(0.55, 0.55, 0.65)
-	env.ambient_light_energy = 0.45
+	env.ambient_light_energy = 0.45 if not GameData.low else 0.75
 	env.tonemap_mode = Environment.TONE_MAPPER_ACES
 	env.tonemap_exposure = 1.15
 	env.glow_enabled = true
 	env.glow_intensity = 0.9
 	env.glow_bloom = 0.06
 	env.glow_hdr_threshold = 0.95
-	env.ssao_enabled = true
+	env.ssao_enabled = not GameData.low
+	if GameData.low:
+		env.glow_enabled = false
 	env.ssao_radius = 1.0
 	env.ssao_intensity = 2.0
 	env.fog_enabled = true
@@ -113,7 +129,10 @@ func _build_env() -> void:
 	sun.light_color = Color(0.75, 0.8, 1.0)
 	sun.light_energy = 0.55
 	sun.shadow_enabled = true
-	sun.directional_shadow_max_distance = 45.0
+	sun.directional_shadow_max_distance = 45.0 if not GameData.low else 28.0
+	if GameData.low:
+		sun.directional_shadow_mode = DirectionalLight3D.SHADOW_ORTHOGONAL
+		sun.light_energy = 0.8
 	sun.rotation_degrees = Vector3(-60, -25, 0)
 	add_child(sun)
 
@@ -139,6 +158,7 @@ func _build_pedestal() -> void:
 	rim.material_override = Rig.glow_mat(Color(1, 0.75, 0.3), 1.0)
 	pedestal.add_child(rim)
 	spot = SpotLight3D.new()
+	spot.set_meta("keep", true)
 	spot.position = Vector3(0, 6, 1.5)
 	spot.rotation_degrees = Vector3(-75, 0, 0)
 	spot.spot_angle = 28.0

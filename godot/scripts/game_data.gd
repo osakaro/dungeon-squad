@@ -156,6 +156,9 @@ func buy(kind: String, h: String) -> bool:
 	save_game()
 	return true
 
+## Modo rendimiento: web y móviles (menos luces, partículas y efectos)
+var low := false
+
 var coins := 0
 var gems := 0
 
@@ -290,6 +293,7 @@ func record_progress(chapter: int, room: int) -> void:
 		chapters_open = max(chapters_open, chapter + 2)
 
 func _ready() -> void:
+	low = OS.has_feature("web") or OS.has_feature("mobile")
 	_setup_input()
 	load_game()
 

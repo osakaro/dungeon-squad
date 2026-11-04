@@ -151,6 +151,7 @@ func _build_torches() -> void:
 			l.position = Vector3(x - side * 0.6, 2.2, z)
 			if z == 0.0:
 				l.shadow_enabled = true
+				l.set_meta("keep", true)
 			add_child(l)
 			torches.append(l)
 
@@ -188,6 +189,7 @@ func _build_portal() -> void:
 	plane.position = Vector3(0, 1.45, 0.05)
 	root.add_child(plane)
 	portal_light = OmniLight3D.new()
+	portal_light.set_meta("keep", true)
 	portal_light.light_color = Color(0.3, 1.0, 0.7)
 	portal_light.omni_range = 9.0
 	portal_light.light_energy = 0.0

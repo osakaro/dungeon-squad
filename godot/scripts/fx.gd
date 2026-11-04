@@ -28,6 +28,8 @@ static func _later(t: float, cb: Callable) -> void:
 ## Partículas genéricas (gravedad negativa = caen, positiva = suben)
 static func make_particles(color: Color, amount: int, speed: float, size: float, life: float, gravity := -8.0, one_shot := true) -> CPUParticles3D:
 	var p := CPUParticles3D.new()
+	if GameData.low:
+		amount = max(2, int(amount * 0.35))
 	p.amount = amount
 	p.lifetime = life
 	p.one_shot = one_shot
@@ -168,6 +170,9 @@ static func glow_sphere(r: float, c: Color, energy := 4.0) -> MeshInstance3D:
 
 ## Estela continua que se queda en el mundo (local_coords = false)
 static func trail(parent: Node3D, color: Color, size := 0.07, amount := 24, life := 0.35) -> CPUParticles3D:
+	if GameData.low:
+		amount = max(4, amount / 4)
+		life *= 0.6
 	var p := make_particles(color, amount, 0.4, size, life, 0.5, false)
 	p.local_coords = false
 	parent.add_child(p)
