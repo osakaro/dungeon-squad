@@ -64,6 +64,9 @@ func setup(m, k: String) -> void:
 	add_child(cs)
 	rig = Builder.hero(k)
 	add_child(rig)
+	if rig is CharModel:
+		rig.attack_speed = max(1.2, rate * 0.9)
+		rig.run_speed_ref = speed
 	shield_mesh = MeshInstance3D.new()
 	shield_mesh.mesh = Rig.sphere(1.0, 24)
 	var sm := FX.flat_mat(Color(1, 0.75, 0.2, 0.18), 1.5)
@@ -116,18 +119,25 @@ func _physics_process(delta: float) -> void:
 		if a.t <= 0.0 and main.nearest_enemy(global_position) != null:
 			if cast(a.key, a.lvl):
 				a.t = cd_of(a)
+				Sfx.play({"hielo": "ice", "grito": "shout", "sombra": "teleport", "esqueleto": "summon", "drenaje": "drain"}.get(a.key, "cast"), -2.0)
+				if rig is CharModel and a.key != "torbellino" and a.key != "sombra":
+					rig.cast_anim()
 			else:
 				a.t = 0.3
 	# torbellino
 	if spin_t > 0.0:
 		spin_t -= delta
 		spin_tick -= delta
-		rig.rotation.y += delta * 22.0
-		rig.arm_r.rotation.x = -1.5
+		if rig is CharModel:
+			rig.spin(spin_t > 0.0)
+		else:
+			rig.rotation.y += delta * 22.0
+			rig.arm_r.rotation.x = -1.5
 		if spin_tick <= 0.0:
 			spin_tick = 0.25
 			main.explode(global_position, 2.4, dmg * 0.5, Color(1, 0.95, 0.7), Callable(), false)
-			FX.slash(global_position, rig.rotation.y, 2.4, Color(1, 0.95, 0.7))
+			FX.slash(global_position, randf() * TAU, 2.4, Color(1, 0.95, 0.7))
+			Sfx.play("slash", -6.0)
 	# escudo / daño recibido
 	shield_t -= delta
 	hurt_t -= delta
@@ -160,6 +170,7 @@ func attack() -> void:
 	rig.attack()
 	if key == "guerrero":
 		FX.slash(global_position, a, melee_range, Color(1, 0.95, 0.75))
+		Sfx.play("slash", -4.0)
 		for e in main.get_enemies():
 			if not e.is_active():
 				continue
@@ -315,14 +326,19 @@ func take_damage(d: float) -> void:
 	hp -= d
 	hurt_t = 0.15
 	invuln = 0.2
+	Sfx.play("hurt", -2.0)
 	FX.number(global_position, d, Color(1, 0.3, 0.3))
 	FX.shake(0.18)
 	if hp <= 0.0:
 		hp = 0.0
 		dead = true
 		FX.burst(global_position + Vector3.UP, Color(0.9, 0.1, 0.1), 40, 5.0, 0.08, 0.9)
-		var tw := rig.create_tween()
-		tw.tween_property(rig, "rotation:x", -PI / 2, 0.5).set_trans(Tween.TRANS_BOUNCE).set_ease(Tween.EASE_OUT)
+		rig.tint(Color(0, 0, 0, 0))
+		if rig is CharModel:
+			rig.die()
+		else:
+			var tw := rig.create_tween()
+			tw.tween_property(rig, "rotation:x", -PI / 2, 0.5).set_trans(Tween.TRANS_BOUNCE).set_ease(Tween.EASE_OUT)
 		main.on_player_died()
 
 func apply_passive(p: String) -> void:

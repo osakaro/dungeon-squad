@@ -7,7 +7,8 @@ const STATS := {
 	"bat": [0.35, 16.0, 4.4, 7.0, 3, 1.9],
 	"crystal": [0.5, 26.0, 0.0, 9.0, 4, 2.0],
 	"brute": [0.6, 95.0, 1.7, 18.0, 9, 3.0],
-	"boss": [1.1, 650.0, 1.4, 25.0, 60, 5.6],
+	"boss": [1.1, 650.0, 1.4, 25.0, 60, 4.8],
+	"skeleton": [0.4, 40.0, 2.5, 12.0, 4, 2.1],
 }
 
 var main
@@ -60,7 +61,11 @@ func setup(m, _type: String, level: int, delay := 0.0) -> void:
 	add_child(cs)
 	rig = Builder.enemy(type)
 	add_child(rig)
-	rig.position.y = -2.0
+	if rig is CharModel:
+		rig.spawn()
+		spawn_t += 0.6
+	else:
+		rig.position.y = -2.0
 	_build_bar(s[5])
 
 func _build_bar(h: float) -> void:
@@ -164,9 +169,13 @@ func _physics_process(delta: float) -> void:
 				"windup":
 					velocity = Vector3.ZERO
 					charge_dir = dir
-					rig.arm_r.rotation.x = -2.2
+					if rig.arm_r:
+						rig.arm_r.rotation.x = -2.2
 					if mode_t <= 0.0:
 						mode = "charge"
+						Sfx.play("shout", -4.0)
+						if rig is CharModel:
+							rig.action(rig.anim_cast, 1.3)
 						mode_t = 0.55
 				"charge":
 					velocity = charge_dir * 12.0 * sm
@@ -205,10 +214,12 @@ func _physics_process(delta: float) -> void:
 						mode = "spiral"
 						mode_t = 1.6
 					2:
+						if rig is CharModel:
+							rig.cast_anim()
 						if main.get_enemies().size() < 10:
 							for i in 3:
 								var a := randf() * TAU
-								main.spawn_enemy("slime", global_position + Vector3(cos(a), 0, sin(a)) * 2.0, 0.0)
+								main.spawn_enemy("skeleton", global_position + Vector3(cos(a), 0, sin(a)) * 2.0, 0.0)
 						FX.ring(global_position, 2.5, Color(0.6, 0.2, 1))
 						mode_t = 2.0
 	velocity += knock
@@ -220,6 +231,8 @@ func _physics_process(delta: float) -> void:
 		rig.animate(delta, velocity.length())
 	if d < radius + 0.45 and hit_cd <= 0.0:
 		hit_cd = 0.8
+		if rig is CharModel and mode != "charge":
+			rig.attack()
 		p.take_damage(dmg)
 		if p.thorns > 0.0:
 			hurt(p.thorns)
@@ -233,6 +246,9 @@ func hurt(amount: float, force_crit := false) -> void:
 		amount *= 2.2
 	hp -= amount
 	flash = 0.1
+	Sfx.play("crit" if crit else "hit", -6.0 if crit else -10.0)
+	if rig is CharModel and type != "boss" and randf() < 0.3:
+		rig.hit()
 	FX.number(global_position + Vector3.UP * (1.5 if type == "boss" else 0.0), amount, Color(1, 0.85, 0.2) if crit else Color.WHITE, crit)
 	if p:
 		p.on_hit()
@@ -249,11 +265,21 @@ func die() -> void:
 	dead = true
 	remove_from_group("enemies")
 	var c: Color = {"slime": Color(0.3, 0.9, 0.45), "bat": Color(0.5, 0.2, 0.6), "crystal": Color(0.7, 0.3, 1),
-		"brute": Color(0.5, 0.35, 0.2), "boss": Color(1, 0.3, 0.1)}[type]
+		"brute": Color(0.5, 0.35, 0.2), "boss": Color(0.4, 0.8, 1.0), "skeleton": Color(0.9, 0.9, 0.8)}[type]
 	FX.burst(global_position + Vector3.UP * 0.6, c, 60 if type == "boss" else 22, 6.0 if type == "boss" else 4.5, 0.1, 0.8)
 	if type == "boss":
 		FX.shake(0.8)
 		FX.ring(global_position, 5.0, Color(1, 0.5, 0.1), 0.8)
 		main.hit_stop(0.25)
 	main.spawn_coins(global_position, coins)
+	Sfx.play("roar" if type == "boss" else "kill", 0.0 if type == "boss" else -6.0)
+	if rig is CharModel:
+		var xf := rig.global_transform
+		remove_child(rig)
+		main.add_child(rig)
+		rig.global_transform = xf
+		rig.tint(Color(0, 0, 0, 0))
+		rig.die()
+		var r := rig
+		main.get_tree().create_timer(1.8, false).timeout.connect(func(): if is_instance_valid(r): r.queue_free())
 	queue_free()

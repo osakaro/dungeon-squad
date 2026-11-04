@@ -24,8 +24,11 @@ func setup(m, damage: float, duration: float) -> void:
 	add_child(cs)
 	rig = Builder.enemy("skel")
 	add_child(rig)
-	rig.position.y = -1.2
-	create_tween().tween_property(rig, "position:y", 0.0, 0.5).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	if rig is CharModel:
+		rig.spawn()
+	else:
+		rig.position.y = -1.2
+		create_tween().tween_property(rig, "position:y", 0.0, 0.5).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 
 func _physics_process(delta: float) -> void:
 	if main.state != "play":

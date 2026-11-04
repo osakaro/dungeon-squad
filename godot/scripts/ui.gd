@@ -87,6 +87,7 @@ func btn(text: String, cb: Callable, size := 22, color := GOLD) -> Button:
 		b.add_theme_color_override(s, Color(0.08, 0.05, 0.02))
 	b.add_theme_color_override("font_disabled_color", Color(0.6, 0.6, 0.6))
 	b.custom_minimum_size = Vector2(0, 50)
+	b.pressed.connect(func(): Sfx.play("click", -4.0, 0.0))
 	b.pressed.connect(cb)
 	return b
 
@@ -153,7 +154,7 @@ func _build_hud() -> void:
 	top.add_child(sp1)
 	boss_box = ig(VBoxContainer.new())
 	boss_box.custom_minimum_size.x = 420
-	var bl := lbl("DEMONIO DEL ABISMO", 20, Color(1, 0.4, 0.3))
+	var bl := lbl("REY ESQUELETO", 20, Color(1, 0.4, 0.3))
 	bl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	boss_box.add_child(bl)
 	boss_bar = bar(Color(0.9, 0.15, 0.2), 18)
@@ -489,6 +490,11 @@ func _build_pause() -> void:
 	var o := _overlay("PAUSA", Color.WHITE)
 	pause_scr = o[0]
 	o[1].add_child(btn("Continuar", func(): main.toggle_pause(), 24))
+	var snd: Button
+	snd = btn("Sonido: SI", func():
+		Sfx.set_muted(not Sfx.muted)
+		snd.text = "Sonido: NO" if Sfx.muted else "Sonido: SI", 20, Color(0.45, 0.75, 1.0))
+	o[1].add_child(snd)
 	o[1].add_child(btn("Abandonar partida", func(): main.go_menu(), 22, Color(0.6, 0.6, 0.7)))
 
 func set_paused(p: bool) -> void:

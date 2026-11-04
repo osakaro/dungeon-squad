@@ -38,78 +38,40 @@ static func _cone(r: Rig, rad: float, h: float, m: Material, pos: Vector3, paren
 	return r.part(Rig.cyl(0.0, rad, h), m, pos, parent)
 
 static func hero(key: String) -> Rig:
-	var r: Rig
-	var metal := func(rr: Rig): return rr.mat(Color(0.78, 0.8, 0.85), 0.25, 0.9)
+	var c: CharModel
 	match key:
 		"arquero":
-			r = humanoid(Color(0.18, 0.5, 0.24), SKIN, Color(0.32, 0.24, 0.16))
-			_cone(r, 0.3, 0.45, r.mat(Color(0.12, 0.38, 0.18)), Vector3(0, 1.72, -0.03))
-			r.part(Rig.sphere(0.26), r.mat(Color(0.12, 0.38, 0.18)), Vector3(0, 1.5, -0.05)).scale = Vector3(1, 1, 0.9)
-			_cape(r, Color(0.1, 0.32, 0.15))
-			var wood := r.mat(Color(0.45, 0.28, 0.14))
-			for i in 9:
-				var a := -1.2 + i * 0.3
-				var seg := r.part(Rig.box(0.05, 0.13, 0.05), wood, Vector3(0, sin(a) * 0.45, 0.08 + cos(a) * 0.16), r.hand_l)
-				seg.rotation.x = -a * 0.4
-			r.part(Rig.box(0.01, 0.86, 0.01), r.mat(Color(0.9, 0.9, 0.85)), Vector3(0, 0, 0.04), r.hand_l)
-			var q := r.part(Rig.cyl(0.1, 0.09, 0.6), r.mat(Color(0.42, 0.22, 0.1)), Vector3(0.14, 1.05, -0.24))
-			q.rotation.x = 0.3
-			for i in 3:
-				r.part(Rig.box(0.03, 0.2, 0.06), r.mat(Color(0.95, 0.95, 0.95)), Vector3(-0.04 + i * 0.04, 0.38, 0), q)
+			c = CharModel.create("Rogue_Hooded", 1.75, ["Knife", "Knife_Offhand", "1H_Crossbow", "Throwable"],
+				{"anim_attack": "2H_Ranged_Shoot", "anim_cast": "2H_Ranged_Shoot"})
 		"mago":
-			r = humanoid(Color(0.3, 0.22, 0.7), SKIN, Color(0.3, 0.22, 0.7))
-			var robe := r.mat(Color(0.26, 0.18, 0.62))
-			r.part(Rig.cyl(0.22, 0.48, 0.9, 14), robe, Vector3(0, 0.45, 0))
-			var hat := r.mat(Color(0.18, 0.12, 0.45))
-			r.part(Rig.cyl(0.42, 0.42, 0.04, 20), hat, Vector3(0, 1.66, 0))
-			var tip := _cone(r, 0.25, 0.7, hat, Vector3(0, 2.0, -0.03))
-			tip.rotation.x = -0.18
-			r.part(Rig.box(0.5, 0.06, 0.06), Rig.glow_mat(Color(1, 0.8, 0.2), 1.5), Vector3(0, 1.72, 0))
-			var beard := _cone(r, 0.14, 0.38, r.mat(Color(0.92, 0.92, 0.95)), Vector3(0, 1.25, 0.15))
-			beard.rotation.x = PI
-			r.part(Rig.cyl(0.035, 0.035, 1.6, 6), r.mat(Color(0.4, 0.25, 0.12)), Vector3(0, 0.15, 0), r.hand_r)
-			r.glow_light(r.hand_r, Color(1.0, 0.5, 0.15), 0.13, Vector3(0, 0.98, 0), 3.5)
+			c = CharModel.create("Mage", 1.75, ["Spellbook", "Spellbook_open", "1H_Wand"],
+				{"anim_attack": "Spellcast_Shoot", "anim_cast": "Spellcast_Long"})
+			_hand_light(c, Color(1, 0.5, 0.15))
 		"guerrero":
-			r = humanoid(Color(0.6, 0.15, 0.12), SKIN, Color(0.35, 0.37, 0.42))
-			var mt: StandardMaterial3D = metal.call(r)
-			r.part(Rig.sphere(0.28), mt, Vector3(0, 1.52, -0.01)).scale = Vector3(1, 0.88, 1)
-			r.part(Rig.box(0.32, 0.04, 0.03), r.mat(Color(0.05, 0.05, 0.05)), Vector3(0, 1.5, 0.26))
-			r.part(Rig.box(0.05, 0.3, 0.38), r.mat(Color(0.85, 0.1, 0.1)), Vector3(0, 1.83, -0.05))
-			r.part(Rig.sphere(0.15, 10), mt, Vector3(-0.37, 1.2, 0))
-			r.part(Rig.sphere(0.15, 10), mt, Vector3(0.37, 1.2, 0))
-			r.part(Rig.box(0.5, 0.4, 0.06), mt, Vector3(0, 1.0, 0.17))
-			_cape(r, Color(0.55, 0.08, 0.08))
-			r.part(Rig.box(0.08, 0.025, 1.0), mt, Vector3(0, 0, 0.58), r.hand_r)
-			r.part(Rig.box(0.32, 0.06, 0.06), r.mat(Color(0.85, 0.65, 0.15), 0.3, 0.8), Vector3(0, 0, 0.08), r.hand_r)
-			var sh := r.part(Rig.cyl(0.34, 0.34, 0.06, 20), r.mat(Color(0.55, 0.12, 0.1), 0.4, 0.4), Vector3(-0.06, 0, 0.12), r.hand_l)
-			sh.rotation.x = PI / 2
-			r.part(Rig.cyl(0.36, 0.36, 0.04, 20), mt, Vector3(0, -0.02, 0), sh)
-			r.part(Rig.sphere(0.08, 8), r.mat(Color(0.9, 0.7, 0.2), 0.3, 0.9), Vector3(0, 0.05, 0), sh)
-			r.scale = Vector3.ONE * 1.08
+			c = CharModel.create("Knight", 1.85, ["1H_Sword_Offhand", "Badge_Shield", "Rectangle_Shield", "Spike_Shield", "2H_Sword"],
+				{"anim_attack": "1H_Melee_Attack_Slice_Horizontal", "anim_cast": "Cheer", "anim_spin": "2H_Melee_Attack_Spinning"})
 		"asesino":
-			r = humanoid(Color(0.12, 0.12, 0.17), SKIN, Color(0.1, 0.1, 0.13), Color(1, 0.2, 0.3))
-			r.part(Rig.sphere(0.27), r.mat(Color(0.08, 0.08, 0.11)), Vector3(0, 1.52, -0.04)).scale = Vector3(1, 1.05, 1)
-			r.part(Rig.box(0.5, 0.12, 0.36), r.mat(Color(0.7, 0.08, 0.15)), Vector3(0, 1.25, 0))
-			r.cape = r.pivot(Vector3(0.1, 1.25, -0.18))
-			r.part(Rig.box(0.12, 0.6, 0.03), r.mat(Color(0.7, 0.08, 0.15)), Vector3(0, -0.3, 0), r.cape)
-			var mt2: StandardMaterial3D = metal.call(r)
-			for h in [r.hand_l, r.hand_r]:
-				r.part(Rig.box(0.03, 0.02, 0.45), mt2, Vector3(0, 0, 0.26), h)
-				r.part(Rig.box(0.14, 0.04, 0.04), r.mat(Color(0.3, 0.1, 0.4)), Vector3(0, 0, 0.04), h)
+			c = CharModel.create("Rogue", 1.75, ["1H_Crossbow", "2H_Crossbow", "Throwable"],
+				{"anim_attack": "Throw", "anim_cast": "Dualwield_Melee_Attack_Stab"})
 		"nigromante":
-			r = humanoid(Color(0.1, 0.16, 0.12), Color(0.72, 0.78, 0.7), Color(0.1, 0.16, 0.12), Color(0.4, 1, 0.5))
-			var robe2 := r.mat(Color(0.08, 0.12, 0.09))
-			r.part(Rig.cyl(0.22, 0.48, 0.9, 14), robe2, Vector3(0, 0.45, 0))
-			_cone(r, 0.31, 0.6, robe2, Vector3(0, 1.72, -0.05))
-			r.part(Rig.sphere(0.27), robe2, Vector3(0, 1.5, -0.07))
-			for s in [-1, 1]:
-				var sp := _cone(r, 0.08, 0.3, r.mat(Color(0.85, 0.85, 0.8)), Vector3(s * 0.36, 1.32, 0))
-				sp.rotation.z = -s * 0.5
-			r.part(Rig.cyl(0.035, 0.035, 1.7, 6), r.mat(Color(0.15, 0.15, 0.15)), Vector3(0, 0.15, 0), r.hand_r)
-			var skull := r.part(Rig.sphere(0.14, 12), r.mat(Color(0.92, 0.9, 0.8)), Vector3(0, 1.0, 0), r.hand_r)
-			r.glow_light(skull, Color(0.3, 1.0, 0.45), 0.05, Vector3(0, 0.02, 0.12), 3.5)
-			_cape(r, Color(0.05, 0.08, 0.06))
-	return r
+			c = CharModel.create("Skeleton_Mage", 1.8, [],
+				{"anim_attack": "Spellcast_Shoot", "anim_cast": "Spellcast_Raise", "anim_death": "Death_C_Skeletons"})
+			c.attach("Skeleton_Staff")
+			_hand_light(c, Color(0.3, 1.0, 0.45))
+	return c
+
+static func _hand_light(c: CharModel, col: Color) -> void:
+	if c.skel == null:
+		return
+	var ba := BoneAttachment3D.new()
+	ba.bone_name = "handslot.r"
+	c.skel.add_child(ba)
+	var l := OmniLight3D.new()
+	l.light_color = col
+	l.light_energy = 1.4
+	l.omni_range = 3.5
+	l.position = Vector3(0, 0.6, 0)
+	ba.add_child(l)
 
 static func enemy(type: String) -> Rig:
 	var r: Rig
@@ -159,35 +121,28 @@ static func enemy(type: String) -> Rig:
 			l.omni_range = 3.0
 			r.bob_node.add_child(l)
 		"brute":
-			r = humanoid(Color(0.4, 0.27, 0.14), Color(0.38, 0.6, 0.25), Color(0.25, 0.17, 0.1), Color(1, 0.25, 0))
-			var wood := r.mat(Color(0.35, 0.22, 0.1))
-			r.part(Rig.box(0.12, 0.12, 0.85), wood, Vector3(0, 0, 0.4), r.hand_r)
-			r.part(Rig.sphere(0.18, 10), wood, Vector3(0, 0, 0.85), r.hand_r)
-			for x in [-0.09, 0.09]:
-				var tusk := _cone(r, 0.03, 0.12, r.mat(Color(0.95, 0.92, 0.8)), Vector3(x, 1.36, 0.2))
-				tusk.rotation.x = 0.3
-			r.part(Rig.box(0.6, 0.15, 0.36), r.mat(Color(0.3, 0.3, 0.32), 0.4, 0.7), Vector3(0, 0.25, 0), r.body)
-			r.scale = Vector3.ONE * 1.45
+			return CharModel.create("Barbarian", 2.3, ["1H_Axe_Offhand", "Barbarian_Round_Shield", "1H_Axe", "Mug"],
+				{"anim_attack": "2H_Melee_Attack_Chop", "anim_cast": "2H_Melee_Attack_Spin", "run_speed_ref": 3.0})
+		"skeleton":
+			var sk := CharModel.create("Skeleton_Minion", 1.65, [], {"anim_run": "Running_B", "anim_attack": "1H_Melee_Attack_Chop",
+				"anim_spawn": "Spawn_Ground_Skeletons", "anim_death": "Death_C_Skeletons", "run_speed_ref": 3.0})
+			sk.attach("Skeleton_Blade")
+			return sk
 		"boss":
-			r = humanoid(Color(0.3, 0.05, 0.08), Color(0.7, 0.15, 0.12), Color(0.15, 0.03, 0.03), Color(1, 0.9, 0.1))
-			var horn := r.mat(Color(0.12, 0.1, 0.1), 0.4)
-			for s in [-1, 1]:
-				var h := _cone(r, 0.08, 0.42, horn, Vector3(s * 0.17, 1.74, 0))
-				h.rotation.z = -s * 0.55
-			var blade := r.mat(Color(0.25, 0.25, 0.28), 0.3, 0.9)
-			r.part(Rig.box(0.12, 0.04, 1.4), blade, Vector3(0, 0, 0.75), r.hand_r)
-			r.part(Rig.box(0.02, 0.05, 1.3), Rig.glow_mat(Color(1, 0.2, 0.05), 5.0), Vector3(0.07, 0, 0.75), r.hand_r)
-			r.wing_l = r.pivot(Vector3(-0.15, 1.1, -0.18))
-			r.wing_r = r.pivot(Vector3(0.15, 1.1, -0.18))
-			var wm2 := r.mat(Color(0.2, 0.04, 0.06))
-			r.part(Rig.box(0.9, 0.6, 0.03), wm2, Vector3(-0.45, 0.15, 0), r.wing_l)
-			r.part(Rig.box(0.9, 0.6, 0.03), wm2, Vector3(0.45, 0.15, 0), r.wing_r)
-			r.glow_light(r.body, Color(1, 0.3, 0.05), 0.08, Vector3(0, 0.1, 0.17), 5.0)
-			r.scale = Vector3.ONE * 2.4
+			var bs := CharModel.create("Skeleton_Warrior", 4.0, [], {"anim_run": "Walking_D_Skeletons", "anim_attack": "1H_Melee_Attack_Slice_Horizontal",
+				"anim_cast": "Spellcast_Raise", "anim_spawn": "Spawn_Ground_Skeletons", "anim_death": "Death_C_Skeletons", "run_speed_ref": 1.4})
+			bs.attach("Skeleton_Axe")
+			bs.attach("Skeleton_Shield_Large_A", "handslot.l")
+			var l := OmniLight3D.new()
+			l.light_color = Color(0.3, 0.8, 1.0)
+			l.light_energy = 2.5
+			l.omni_range = 6.0
+			l.position = Vector3(0, 3.5, 0.6)
+			bs.add_child(l)
+			return bs
 		"skel":
-			r = humanoid(Color(0.88, 0.86, 0.78), Color(0.9, 0.88, 0.8), Color(0.82, 0.8, 0.72), Color(0.3, 1, 0.45))
-			r.part(Rig.box(0.05, 0.03, 0.6), r.mat(Color(0.6, 0.62, 0.66), 0.3, 0.8), Vector3(0, 0, 0.32), r.hand_r)
-			for i in 3:
-				r.part(Rig.box(0.54, 0.04, 0.34), r.mat(Color(0.6, 0.58, 0.5)), Vector3(0, 0.15 - i * 0.12, 0), r.body)
-			r.scale = Vector3.ONE * 0.85
+			var mn := CharModel.create("Skeleton_Minion", 1.45, [], {"anim_run": "Running_B", "anim_attack": "1H_Melee_Attack_Chop",
+				"anim_spawn": "Spawn_Ground_Skeletons", "anim_death": "Death_C_Skeletons", "run_speed_ref": 3.5})
+			mn.attach("Skeleton_Blade")
+			return mn
 	return r

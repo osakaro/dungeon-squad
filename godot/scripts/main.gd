@@ -109,6 +109,7 @@ func _build_pedestal() -> void:
 # ---------------- MENÚ ----------------
 func go_menu() -> void:
 	get_tree().paused = false
+	Sfx.set_intense(false)
 	state = "menu"
 	clear_level()
 	if player:
@@ -133,6 +134,8 @@ func show_hero(i: int) -> void:
 	spot.light_color = GameData.HEROES[key].color.lightened(0.5)
 	FX.burst(pedestal.global_position + Vector3(0, 1, 0), GameData.HEROES[key].color, 40, 4.0, 0.06, 0.9, -2.0)
 	ui.update_menu(key)
+	if showcase is CharModel:
+		showcase.action("Cheer")
 
 func upgrade_weapon() -> void:
 	var key: String = hero_keys[sel]
@@ -142,6 +145,7 @@ func upgrade_weapon() -> void:
 	GameData.coins -= cost
 	GameData.weapon_level[key] = GameData.wl(key) + 1
 	GameData.save_game()
+	Sfx.play("upgrade", 0.0, 0.0)
 	FX.burst(pedestal.global_position + Vector3(0, 1.2, 0), Color(1, 0.8, 0.25), 60, 6.0, 0.07, 1.0, -3.0)
 	FX.ring(pedestal.global_position, 2.0, Color(1, 0.8, 0.25), 0.6)
 	ui.update_menu(key)
@@ -184,10 +188,14 @@ func load_level() -> void:
 			t = "crystal"
 		elif level > 2 and r < 0.38 + level * 0.03:
 			t = "brute"
-		elif level > 1 and r < 0.6:
+		elif level > 1 and r < 0.52:
 			t = "bat"
+		elif level > 1 and r < 0.8:
+			t = "skeleton"
 		spawn_enemy(t, arena.random_spawn(player.global_position, 5.0), i * 0.12)
 	state = "play"
+	Sfx.set_intense(boss)
+	Sfx.play("level", -4.0, 0.0)
 	ui.show_hud()
 	ui.show_banner("¡JEFE!" if boss else "NIVEL %d" % level, Color(1, 0.3, 0.25) if boss else ui.GOLD)
 
@@ -217,6 +225,7 @@ func spawn_enemy(type: String, pos: Vector3, delay := 0.0) -> void:
 	add_child(e)
 	e.global_position = pos
 	e.setup(self, type, level, delay)
+	Sfx.play("roar" if type == "boss" else "spawn", -10.0 if type != "boss" else 0.0)
 	FX.ring(pos, 1.2 if type != "boss" else 2.5, Color(0.6, 0.3, 1), 0.8)
 	FX.burst(pos + Vector3.UP * 0.2, Color(0.6, 0.3, 1), 14, 3.0, 0.05, 0.7, 2.0)
 
@@ -227,9 +236,14 @@ func shoot(from: Vector3, vel: Vector3, opts: Dictionary) -> void:
 	opts["vel"] = vel
 	p.setup(self, opts)
 	p.orient()
+	if opts.get("enemy", false):
+		Sfx.play("eshot", -6.0)
+	else:
+		Sfx.play({"arrow": "arrow", "big": "arrow", "fire": "fire", "dagger": "dagger", "bolt": "bolt", "wave": "wave"}.get(opts.get("kind", "arrow"), "arrow"), -4.0)
 
 func explode(pos: Vector3, r: float, dmg: float, color: Color, extra := Callable(), fx := true) -> void:
 	if fx:
+		Sfx.play("boom", -3.0)
 		FX.ring(pos, r, color)
 		FX.burst(pos + Vector3.UP * 0.4, color, 24, r * 2.5, 0.08, 0.5, -4.0)
 	for e in get_enemies():
@@ -250,6 +264,7 @@ func spawn_coins(pos: Vector3, value: int) -> void:
 
 func collect_coin(v: int, pos: Vector3) -> void:
 	run_coins += v
+	Sfx.play("coin", -8.0, 0.15)
 	FX.burst(pos, Color(1, 0.8, 0.2), 5, 2.0, 0.04, 0.3, 0)
 
 func spawn_minion(pos: Vector3, dmg: float, duration: float) -> void:
@@ -271,6 +286,7 @@ func _physics_process(delta: float) -> void:
 	if not portal_open and level_time > 1.2 and get_enemies().is_empty():
 		portal_open = true
 		arena.open_portal()
+		Sfx.play("portal")
 		ui.show_banner("¡SALA DESPEJADA!", Color(0.4, 1, 0.7))
 		for p in get_tree().get_nodes_in_group("projectiles"):
 			if p.enemy:
@@ -347,18 +363,22 @@ func _level_ability(a: Dictionary) -> void:
 func pick_option(o: Dictionary) -> void:
 	if state != "choose":
 		return
+	Sfx.play("pick", 0.0, 0.0)
 	o.cb.call()
 	level += 1
 	load_level()
 
 func on_player_died() -> void:
 	state = "dying"
+	Sfx.play("death", 0.0, 0.0)
 	await get_tree().create_timer(1.3).timeout
 	if state == "dying":
 		finish(false)
 
 func finish(win: bool) -> void:
 	state = "end"
+	if win:
+		Sfx.play("win", 0.0, 0.0)
 	GameData.coins += run_coins
 	GameData.save_game()
 	ui.show_end(win, level, run_coins)
