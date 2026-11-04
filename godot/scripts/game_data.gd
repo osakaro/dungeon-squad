@@ -157,6 +157,108 @@ func buy(kind: String, h: String) -> bool:
 	return true
 
 var coins := 0
+var gems := 0
+
+# ================= EQUIPO =================
+const SLOTS := ["casco", "armadura", "anillo", "amuleto"]
+const SLOT_NAMES := {"casco": "Casco", "armadura": "Armadura", "anillo": "Anillo", "amuleto": "Amuleto"}
+const RARITIES := [["Común", Color(0.72, 0.75, 0.8)], ["Raro", Color(0.4, 0.68, 1.0)], ["Épico", Color(0.75, 0.45, 1.0)], ["Legendario", Color(1.0, 0.75, 0.3)]]
+const RARITY_MULT := [1.0, 1.8, 3.0, 4.5]
+const SELL := [20, 50, 120, 300]
+const ITEM_NAMES := {
+	"casco": ["Casco de cuero", "Yelmo de hierro", "Yelmo rúnico", "Corona del rey caído"],
+	"armadura": ["Jubón acolchado", "Cota de malla", "Armadura arcana", "Égida del dragón"],
+	"anillo": ["Anillo de cobre", "Anillo de plata", "Anillo de rubí", "Sello de Malakar"],
+	"amuleto": ["Colgante de hueso", "Amuleto de jade", "Talismán estelar", "Corazón del volcán"],
+}
+## estadística principal y posibles secundarias de cada pieza (valor base por punto de rareza)
+const SLOT_STATS := {
+	"casco": [["hp", 6.0], [["armor", 2.0], ["crit", 1.5]]],
+	"armadura": [["hp", 8.0], [["armor", 3.0], ["speed", 2.0]]],
+	"anillo": [["dmg", 6.0], [["crit", 2.0], ["rate", 3.0]]],
+	"amuleto": [["dmg", 4.0], [["speed", 3.0], ["rate", 4.0]]],
+}
+const STAT_NAMES := {"hp": "Vida", "dmg": "Daño", "crit": "Crítico", "rate": "Vel. ataque", "speed": "Velocidad", "armor": "Armadura"}
+const CHESTS := {
+	"wood": {"name": "Cofre de madera", "price": 150, "currency": "coins", "weights": [60, 30, 9, 1], "icon": "chest_wood"},
+	"epic": {"name": "Cofre épico", "price": 30, "currency": "gems", "weights": [0, 50, 38, 12], "icon": "chest_epic"},
+}
+var inventory := []      # lista de objetos {id, slot, r, name, stats}
+var equipped := {}       # hueco -> id
+var next_item_id := 1
+
+func make_item(slot: String, r: int) -> Dictionary:
+	var m: float = RARITY_MULT[r]
+	var st: Array = SLOT_STATS[slot]
+	var stats := {}
+	stats[st[0][0]] = snappedf(st[0][1] * m * randf_range(0.9, 1.1), 0.1)
+	if r >= 1:
+		var sec: Array = st[1][randi() % 2]
+		stats[sec[0]] = snappedf(sec[1] * m * randf_range(0.9, 1.1), 0.1)
+	var it := {"id": next_item_id, "slot": slot, "r": r, "name": ITEM_NAMES[slot][r], "stats": stats}
+	next_item_id += 1
+	return it
+
+func open_chest(kind: String) -> Dictionary:
+	var c: Dictionary = CHESTS[kind]
+	if c.currency == "coins":
+		if coins < c.price:
+			return {}
+		coins -= c.price
+	else:
+		if gems < c.price:
+			return {}
+		gems -= c.price
+	var roll := randf() * 100.0
+	var r := 0
+	var acc := 0.0
+	for i in 4:
+		acc += c.weights[i]
+		if roll < acc:
+			r = i
+			break
+	var it := make_item(SLOTS[randi() % SLOTS.size()], r)
+	inventory.append(it)
+	save_game()
+	return it
+
+func find_item(id: int) -> Dictionary:
+	for it in inventory:
+		if int(it.id) == id:
+			return it
+	return {}
+
+func equip(id: int) -> void:
+	var it := find_item(id)
+	if it.is_empty():
+		return
+	equipped[it.slot] = id
+	save_game()
+
+func sell(id: int) -> void:
+	var it := find_item(id)
+	if it.is_empty():
+		return
+	if equipped.get(it.slot, -1) == id:
+		equipped.erase(it.slot)
+	coins += SELL[int(it.r)]
+	inventory.erase(it)
+	save_game()
+
+## Suma de estadísticas del equipo puesto (en %)
+func gear_stats() -> Dictionary:
+	var tot := {}
+	for s in equipped:
+		var it := find_item(int(equipped[s]))
+		for k in it.get("stats", {}):
+			tot[k] = float(tot.get(k, 0.0)) + float(it.stats[k])
+	return tot
+
+static func stats_text(stats: Dictionary) -> String:
+	var parts := []
+	for k in stats:
+		parts.append("+%s%% %s" % [str(stats[k]), STAT_NAMES[k]] if k != "armor" else "-%s%% daño recibido" % str(stats[k]))
+	return "\n".join(parts)
 var weapon_level := {}
 var unlocked := ["guerrero"]
 var chapter_best := {}       # capítulo -> mejor sala alcanzada
@@ -229,6 +331,10 @@ func load_game() -> void:
 		music_on = bool(cfg.get_value("save", "music_on", true))
 		sfx_on = bool(cfg.get_value("save", "sfx_on", true))
 		talents = cfg.get_value("save", "talents", {})
+		gems = int(cfg.get_value("save", "gems", 0))
+		inventory = cfg.get_value("save", "inventory", [])
+		equipped = cfg.get_value("save", "equipped", {})
+		next_item_id = int(cfg.get_value("save", "next_item_id", 1))
 		mastery = cfg.get_value("save", "mastery", {})
 		dual = cfg.get_value("save", "dual", [])
 
@@ -243,6 +349,10 @@ func save_game() -> void:
 	cfg.set_value("save", "music_on", music_on)
 	cfg.set_value("save", "sfx_on", sfx_on)
 	cfg.set_value("save", "talents", talents)
+	cfg.set_value("save", "gems", gems)
+	cfg.set_value("save", "inventory", inventory)
+	cfg.set_value("save", "equipped", equipped)
+	cfg.set_value("save", "next_item_id", next_item_id)
 	cfg.set_value("save", "mastery", mastery)
 	cfg.set_value("save", "dual", dual)
 	cfg.save(SAVE_PATH)

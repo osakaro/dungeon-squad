@@ -289,6 +289,10 @@ func die() -> void:
 		FX.ring(global_position, 5.0, Color(1, 0.5, 0.1), 0.8)
 		main.hit_stop(0.25)
 	main.spawn_coins(global_position, coins)
+	if is_boss:
+		var gem_n: int = 15 if display_name == GameData.CHAPTERS[main.chapter].boss.to_upper() else (5 if type == "boss" else 3)
+		main.run_gems += gem_n
+		FX.number(global_position + Vector3.UP * 2.0, gem_n, Color(0.5, 0.9, 1.0), true)
 	Sfx.play("roar" if is_boss else "kill", -2.0 if is_boss else -12.0)
 	if rig is CharModel:
 		var xf := rig.global_transform

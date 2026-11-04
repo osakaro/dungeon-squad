@@ -27,6 +27,7 @@ var cine_pos := Vector3(0, 8, 12)
 var cine_look := Vector3.ZERO
 var title_t := 0.0
 var run_coins := 0
+var run_gems := 0
 var portal_open := false
 var level_time := 0.0
 
@@ -230,6 +231,7 @@ func _begin_run() -> void:
 	player.setup(self, hero_keys[sel])
 	level = 1
 	run_coins = 0
+	run_gems = 0
 	ui.set_abilities(player.abilities)
 	load_level()
 
@@ -493,6 +495,9 @@ func finish(win: bool) -> void:
 	if win:
 		Sfx.play("win", 0.0, 0.0)
 	GameData.coins += run_coins
+	if win:
+		run_gems += 20
+	GameData.gems += run_gems
 	GameData.save_game()
 	ui.show_end(win, level, run_coins)
 

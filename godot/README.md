@@ -72,7 +72,14 @@ El nigromante **Malakar** ha despertado y su ejército de esqueletos invade el r
   - **Arma** (de cada héroe): nivel de arma, Maestría (la habilidad principal empieza a más nivel) y Doble técnica (segunda habilidad desde el inicio).
 - **Dificultad más alta:** más enemigos, más vida y daño en cada sala; para avanzar hay que ir mejorando.
 
+- **Barra de navegación** abajo: Tienda · Equipo · Jugar · Mejoras.
+- **Equipo** con 4 huecos (casco, armadura, anillo y amuleto) y 4 rarezas (común, raro, épico y legendario). Cada objeto da bonus de vida, daño, crítico, velocidad, velocidad de ataque o armadura. Se puede equipar o vender.
+- **Tienda de cofres:** cofre de madera (monedas) y cofre épico (gemas), con animación al abrirlos.
+- **Gemas:** se ganan al derrotar campeones (3), jefes (5) y jefes finales (15), y al completar un capítulo (+20).
+
 ![Mejoras](../docs/godot-mejoras.png)
+![Tienda](../docs/godot-tienda.png)
+![Equipo](../docs/godot-equipo.png)
 - **Sonido discreto:** solo monedas e interfaz, con música ambiental baja y distinta en cada zona. Se puede quitar desde la pausa.
 - **Efectos:**
   - números de daño (críticos en amarillo);

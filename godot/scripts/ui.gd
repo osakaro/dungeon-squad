@@ -34,6 +34,7 @@ var m_lock: Label
 var m_play: Button
 var m_upgrade: Button
 var m_coins: Label
+var m_gems: Label
 var m_chapter: Label
 var m_chapter_best: Label
 var m_dots: HBoxContainer
@@ -55,6 +56,17 @@ var story_idx := 0
 var story_cb: Callable
 # mejoras
 var upg: Control
+var shop: Control
+var shop_cur: Label
+var equip_scr: Control
+var eq_slots: HBoxContainer
+var eq_grid: GridContainer
+var eq_detail: PanelContainer
+var eq_total: Label
+var eq_sel := -1
+var chest_scr: Control
+var nav: Control
+var nav_btns := {}
 var upg_tab := "talents"
 var upg_grid: GridContainer
 var upg_coins: Label
@@ -79,6 +91,10 @@ func _ready() -> void:
 	_build_story()
 	_build_cine()
 	_build_upgrades()
+	_build_shop()
+	_build_equip()
+	_build_chest()
+	_build_nav()
 	hide_all()
 
 # ================= helpers =================
@@ -228,7 +244,7 @@ func spacer(expand_h := true) -> Control:
 	return c
 
 func hide_all() -> void:
-	for c in [hud, menu, choose, endscr, pause_scr, title_scr, story_scr, cine, upg]:
+	for c in [hud, menu, choose, endscr, pause_scr, title_scr, story_scr, cine, upg, shop, equip_scr, chest_scr, nav]:
 		c.visible = false
 
 func _clear(c: Node) -> void:
@@ -390,6 +406,12 @@ func _build_menu() -> void:
 	ch.add_child(coin_icon(22))
 	m_coins = lbl("0", 19, Color(1, 0.9, 0.6))
 	ch.add_child(m_coins)
+	var gi := SkillIcon.new("gem", Color(0.5, 0.9, 1.0))
+	gi.custom_minimum_size = Vector2(22, 22)
+	gi.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	ch.add_child(gi)
+	m_gems = lbl("0", 19, Color(0.7, 0.95, 1.0))
+	ch.add_child(m_gems)
 	cp.add_child(ch)
 	cp.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	top.add_child(cp)
@@ -452,7 +474,9 @@ func _build_menu() -> void:
 	m_upgrade.expand_icon = true
 	m_upgrade.add_theme_constant_override("icon_max_width", 26)
 	m_upgrade.custom_minimum_size = Vector2(250, 60)
-	bottom.add_child(m_upgrade)
+	var navgap := ig(Control.new())
+	navgap.custom_minimum_size.y = 74
+	root.add_child(navgap)
 
 func _chip(text: String) -> PanelContainer:
 	var p := pill(text, 14, Color(0.92, 0.93, 0.97))
@@ -462,6 +486,7 @@ func show_menu() -> void:
 	hide_all()
 	menu.visible = true
 	_fade_in(menu)
+	_show_nav("home")
 
 func update_menu(key: String) -> void:
 	var h: Dictionary = GameData.HEROES[key]
@@ -498,6 +523,7 @@ func update_menu(key: String) -> void:
 	m_chapter.text = "Capítulo %d  -  %s" % [main.chapter + 1, ch.name]
 	m_chapter_best.text = "Mejor sala: %d / %d" % [int(GameData.chapter_best.get(main.chapter, 0)), GameData.MAX_LEVEL]
 	m_coins.text = str(GameData.coins)
+	m_gems.text = str(GameData.gems)
 
 # ================= CARTAS =================
 const RARITY := {
@@ -632,7 +658,7 @@ func show_end(win: bool, level: int, coins: int) -> void:
 	_fade_in(endscr, 0.4)
 	end_title.text = "¡Capítulo completado!" if win else "Has caído"
 	end_title.add_theme_color_override("font_color", GOLD if win else Color(1, 0.55, 0.5))
-	end_text.text = "Sala alcanzada: %d\nMonedas ganadas: %d\n\nTotal: %d monedas" % [level, coins, GameData.coins]
+	end_text.text = "Sala alcanzada: %d\nMonedas ganadas: %d\nGemas ganadas: %d\n\nTotal: %d monedas  -  %d gemas" % [level, coins, main.run_gems, GameData.coins, GameData.gems]
 
 func _build_pause() -> void:
 	var o := _overlay("Pausa")
@@ -894,13 +920,7 @@ func _build_upgrades() -> void:
 	bg.color = Color(0.01, 0.01, 0.04, 0.72)
 	full(bg)
 	upg.add_child(bg)
-	var c := CenterContainer.new()
-	full(c)
-	upg.add_child(c)
-	var panel := PanelContainer.new()
-	panel.add_theme_stylebox_override("panel", sb(Color(0.07, 0.08, 0.13, 0.97), 28, Color(1, 1, 1, 0.07), 1, 24))
-	panel.custom_minimum_size = Vector2(980, 600)
-	c.add_child(panel)
+	var panel := _page_panel(upg)
 	var v := VBoxContainer.new()
 	v.add_theme_constant_override("separation", 16)
 	panel.add_child(v)
@@ -922,7 +942,6 @@ func _build_upgrades() -> void:
 	cp.add_child(ch)
 	cp.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	head.add_child(cp)
-	head.add_child(round_btn("X", func(): show_menu(), 44))
 	var tabs := HBoxContainer.new()
 	tabs.add_theme_constant_override("separation", 10)
 	v.add_child(tabs)
@@ -949,6 +968,7 @@ func show_upgrades(tab: String) -> void:
 		_fade_in(upg, 0.2)
 	upg_tab = tab
 	refresh_upgrades()
+	_show_nav("upg")
 
 func _upg_card(icon: String, title: String, desc: String, lvl: int, maxl: int, cost: int, cb: Callable) -> Control:
 	var col := SkillIcon.color_of(icon)
@@ -1043,3 +1063,372 @@ func _buy(kind: String, h: String) -> void:
 		Sfx.play("upgrade", -4.0, 0.0)
 		main.show_hero(main.sel)
 		show_upgrades(upg_tab)
+
+# ================= NAVEGACIÓN / PÁGINAS =================
+func _page_panel(page: Control) -> PanelContainer:
+	var m := MarginContainer.new()
+	full(m)
+	m.add_theme_constant_override("margin_left", 40)
+	m.add_theme_constant_override("margin_right", 40)
+	m.add_theme_constant_override("margin_top", 18)
+	m.add_theme_constant_override("margin_bottom", 92)
+	page.add_child(m)
+	var panel := PanelContainer.new()
+	panel.add_theme_stylebox_override("panel", sb(Color(0.07, 0.08, 0.13, 0.97), 28, Color(1, 1, 1, 0.07), 1, 22))
+	m.add_child(panel)
+	return panel
+
+func _page(bg_alpha := 0.72) -> Control:
+	var p := full(Control.new())
+	add_child(p)
+	var bg := ColorRect.new()
+	bg.color = Color(0.01, 0.01, 0.04, bg_alpha)
+	full(bg)
+	p.add_child(bg)
+	return p
+
+func _build_nav() -> void:
+	nav = ig(full(Control.new()))
+	add_child(nav)
+	var bar := PanelContainer.new()
+	var st := sb(Color(0.05, 0.06, 0.1, 0.96), 0, Color(1, 1, 1, 0.06), 0, 6)
+	st.border_width_top = 1
+	bar.add_theme_stylebox_override("panel", st)
+	bar.anchor_left = 0.0
+	bar.anchor_right = 1.0
+	bar.anchor_top = 1.0
+	bar.anchor_bottom = 1.0
+	bar.offset_top = -74
+	nav.add_child(bar)
+	var h := HBoxContainer.new()
+	h.alignment = BoxContainer.ALIGNMENT_CENTER
+	h.add_theme_constant_override("separation", 6)
+	bar.add_child(h)
+	for t in [["shop", "Tienda", "nav_tienda"], ["equip", "Equipo", "nav_equipo"], ["home", "Jugar", "nav_jugar"], ["upg", "Mejoras", "nav_mejoras"]]:
+		var b := Button.new()
+		b.custom_minimum_size = Vector2(150, 62)
+		b.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
+		var v := vbox(0)
+		v.alignment = BoxContainer.ALIGNMENT_CENTER
+		full(v)
+		var ic := SkillIcon.new(t[2], Color.WHITE)
+		ic.custom_minimum_size = Vector2(28, 28)
+		ic.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+		v.add_child(ic)
+		v.add_child(center(lbl(t[1], 14)))
+		b.add_child(v)
+		b.pressed.connect(_nav_go.bind(t[0]))
+		h.add_child(b)
+		nav_btns[t[0]] = b
+
+func _nav_go(page: String) -> void:
+	Sfx.play("click", -10.0, 0.0)
+	match page:
+		"home": show_menu()
+		"upg": show_upgrades(upg_tab)
+		"shop": show_shop()
+		"equip": show_equip()
+
+func _show_nav(active: String) -> void:
+	nav.visible = true
+	for k in nav_btns:
+		var on: bool = k == active
+		var st := sb(Color(1, 0.76, 0.28, 0.16) if on else Color(0, 0, 0, 0), 16, Color(0, 0, 0, 0), 0, 4)
+		for s2 in ["normal", "hover", "pressed"]:
+			nav_btns[k].add_theme_stylebox_override(s2, st)
+		nav_btns[k].modulate = Color(1, 0.85, 0.5) if on else Color(1, 1, 1, 0.7)
+	m_coins.text = str(GameData.coins)
+	m_gems.text = str(GameData.gems)
+
+func _currency_pill() -> Array:
+	var cp := PanelContainer.new()
+	var cst := sb(Color(1, 1, 1, 0.06), 40, Color(0, 0, 0, 0), 0, 6)
+	cst.content_margin_left = 10
+	cst.content_margin_right = 16
+	cp.add_theme_stylebox_override("panel", cst)
+	var l := lbl("", 18, Color(1, 0.92, 0.7))
+	cp.add_child(l)
+	cp.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	return [cp, l]
+
+# ================= TIENDA =================
+func _build_shop() -> void:
+	shop = _page()
+	var panel := _page_panel(shop)
+	var v := vbox(18)
+	v.mouse_filter = Control.MOUSE_FILTER_PASS
+	panel.add_child(v)
+	var head := hbox(10)
+	head.add_child(lbl("Tienda", 36, Color.WHITE, true))
+	head.add_child(spacer())
+	var cp := _currency_pill()
+	shop_cur = cp[1]
+	head.add_child(cp[0])
+	v.add_child(head)
+	var row := HBoxContainer.new()
+	row.alignment = BoxContainer.ALIGNMENT_CENTER
+	row.add_theme_constant_override("separation", 30)
+	row.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	v.add_child(row)
+	for k in GameData.CHESTS:
+		var c: Dictionary = GameData.CHESTS[k]
+		var col := Color(0.85, 0.6, 0.3) if k == "wood" else Color(0.75, 0.45, 1.0)
+		var card := PanelContainer.new()
+		card.custom_minimum_size = Vector2(330, 0)
+		var cs := sb(Color(col.r * 0.12, col.g * 0.12, col.b * 0.16), 24, Color(col.r, col.g, col.b, 0.6), 2, 20)
+		cs.shadow_color = Color(col.r, col.g, col.b, 0.2)
+		cs.shadow_size = 16
+		card.add_theme_stylebox_override("panel", cs)
+		var cv := vbox(10)
+		cv.mouse_filter = Control.MOUSE_FILTER_PASS
+		cv.alignment = BoxContainer.ALIGNMENT_CENTER
+		card.add_child(cv)
+		cv.add_child(center(lbl(c.name, 26, Color.WHITE, true)))
+		var ic := SkillIcon.new(c.icon, col)
+		ic.custom_minimum_size = Vector2(130, 130)
+		ic.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+		cv.add_child(ic)
+		var w: Array = c.weights
+		var odds := []
+		for i in 4:
+			if w[i] > 0:
+				odds.append("%s %d%%" % [GameData.RARITIES[i][0], w[i]])
+		cv.add_child(center(wrapl(lbl("Un objeto de equipo al azar\n" + "  -  ".join(odds), 13, GREY), 290)))
+		var price := "%d %s" % [c.price, "monedas" if c.currency == "coins" else "gemas"]
+		var b := btn("Abrir  -  " + price, _buy_chest.bind(k), 18, true, Color(1, 0.76, 0.28) if k == "wood" else Color(0.7, 0.5, 1.0))
+		b.set_meta("chest", k)
+		cv.add_child(b)
+		row.add_child(card)
+	v.add_child(center(lbl("Las gemas se consiguen derrotando campeones y jefes, y al completar capítulos.", 14, GREY)))
+
+func show_shop() -> void:
+	hide_all()
+	shop.visible = true
+	_fade_in(shop, 0.2)
+	_refresh_shop()
+	_show_nav("shop")
+
+func _refresh_shop() -> void:
+	shop_cur.text = "%d monedas   -   %d gemas" % [GameData.coins, GameData.gems]
+	for b in shop.find_children("*", "Button", true, false):
+		if b.has_meta("chest"):
+			var c: Dictionary = GameData.CHESTS[b.get_meta("chest")]
+			b.disabled = (GameData.coins if c.currency == "coins" else GameData.gems) < c.price
+
+func _buy_chest(kind: String) -> void:
+	var it := GameData.open_chest(kind)
+	if it.is_empty():
+		return
+	_play_chest(kind, it)
+
+# ================= APERTURA DE COFRE =================
+var chest_icon: SkillIcon
+var chest_flash: ColorRect
+var chest_card: PanelContainer
+var chest_item_icon: SkillIcon
+var chest_name: Label
+var chest_rar: Label
+var chest_stats: Label
+var chest_btns: HBoxContainer
+var chest_item := {}
+
+func _build_chest() -> void:
+	chest_scr = _page(0.88)
+	var c := CenterContainer.new()
+	full(c)
+	chest_scr.add_child(c)
+	var v := vbox(18)
+	v.mouse_filter = Control.MOUSE_FILTER_PASS
+	v.alignment = BoxContainer.ALIGNMENT_CENTER
+	c.add_child(v)
+	chest_icon = SkillIcon.new("chest_wood", Color.WHITE)
+	chest_icon.custom_minimum_size = Vector2(220, 220)
+	chest_icon.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	v.add_child(chest_icon)
+	chest_card = PanelContainer.new()
+	chest_card.custom_minimum_size = Vector2(360, 0)
+	v.add_child(chest_card)
+	var cv := vbox(8)
+	cv.alignment = BoxContainer.ALIGNMENT_CENTER
+	chest_card.add_child(cv)
+	chest_rar = center(lbl("", 16))
+	cv.add_child(chest_rar)
+	chest_item_icon = SkillIcon.new("slot_casco", Color.WHITE)
+	chest_item_icon.custom_minimum_size = Vector2(110, 110)
+	chest_item_icon.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	cv.add_child(chest_item_icon)
+	chest_name = center(lbl("", 28, Color.WHITE, true))
+	cv.add_child(chest_name)
+	chest_stats = center(lbl("", 17, GREY))
+	cv.add_child(chest_stats)
+	chest_btns = HBoxContainer.new()
+	chest_btns.alignment = BoxContainer.ALIGNMENT_CENTER
+	chest_btns.add_theme_constant_override("separation", 12)
+	chest_btns.add_child(btn("Equipar", func():
+		GameData.equip(int(chest_item.id))
+		show_shop(), 18, true))
+	chest_btns.add_child(btn("Guardar", func(): show_shop(), 18))
+	cv.add_child(chest_btns)
+	chest_flash = ColorRect.new()
+	chest_flash.color = Color(1, 1, 1, 0)
+	full(chest_flash)
+	ig(chest_flash)
+	chest_scr.add_child(chest_flash)
+
+func _play_chest(kind: String, it: Dictionary) -> void:
+	chest_item = it
+	hide_all()
+	chest_scr.visible = true
+	var r: int = int(it.r)
+	var rc: Color = GameData.RARITIES[r][1]
+	chest_icon.setup(GameData.CHESTS[kind].icon, Color(0.85, 0.6, 0.3) if kind == "wood" else Color(0.75, 0.45, 1.0))
+	chest_icon.visible = true
+	chest_icon.pivot_offset = Vector2(110, 110)
+	chest_icon.scale = Vector2.ONE
+	chest_card.visible = false
+	var tw := chest_icon.create_tween()
+	for i in 8:
+		tw.tween_property(chest_icon, "rotation", 0.12 * (1 if i % 2 == 0 else -1) * (1.0 + i * 0.15), 0.08)
+	tw.tween_property(chest_icon, "rotation", 0.0, 0.05)
+	tw.tween_property(chest_icon, "scale", Vector2.ONE * 1.25, 0.15)
+	tw.tween_callback(func():
+		Sfx.play("upgrade", -2.0, 0.0)
+		chest_icon.visible = false
+		chest_flash.color = Color(rc.r, rc.g, rc.b, 0.9)
+		chest_flash.create_tween().tween_property(chest_flash, "color:a", 0.0, 0.6)
+		_show_item_card(it))
+
+func _show_item_card(it: Dictionary) -> void:
+	var r: int = int(it.r)
+	var rc: Color = GameData.RARITIES[r][1]
+	var st := sb(Color(rc.r * 0.12, rc.g * 0.12, rc.b * 0.16, 0.98), 26, rc, 3, 24)
+	st.shadow_color = Color(rc.r, rc.g, rc.b, 0.45)
+	st.shadow_size = 30
+	chest_card.add_theme_stylebox_override("panel", st)
+	chest_rar.text = GameData.RARITIES[r][0].to_upper() + "  -  " + GameData.SLOT_NAMES[it.slot]
+	chest_rar.add_theme_color_override("font_color", rc)
+	chest_item_icon.setup("slot_" + it.slot, rc.lightened(0.15))
+	chest_name.text = it.name
+	chest_stats.text = GameData.stats_text(it.stats)
+	chest_card.visible = true
+	chest_card.pivot_offset = Vector2(180, 150)
+	chest_card.scale = Vector2.ONE * 0.6
+	chest_card.create_tween().tween_property(chest_card, "scale", Vector2.ONE, 0.35).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+
+# ================= EQUIPO =================
+func _build_equip() -> void:
+	equip_scr = _page()
+	var panel := _page_panel(equip_scr)
+	var v := vbox(14)
+	v.mouse_filter = Control.MOUSE_FILTER_PASS
+	panel.add_child(v)
+	var head := hbox(10)
+	head.add_child(lbl("Equipo", 36, Color.WHITE, true))
+	head.add_child(spacer())
+	eq_total = lbl("", 14, Color(0.7, 1.0, 0.75))
+	eq_total.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	head.add_child(eq_total)
+	v.add_child(head)
+	eq_slots = HBoxContainer.new()
+	eq_slots.add_theme_constant_override("separation", 12)
+	v.add_child(eq_slots)
+	v.add_child(lbl("Inventario", 18, GREY))
+	var sc := ScrollContainer.new()
+	sc.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	sc.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	v.add_child(sc)
+	eq_grid = GridContainer.new()
+	eq_grid.columns = 9
+	eq_grid.add_theme_constant_override("h_separation", 10)
+	eq_grid.add_theme_constant_override("v_separation", 10)
+	sc.add_child(eq_grid)
+	eq_detail = PanelContainer.new()
+	eq_detail.add_theme_stylebox_override("panel", sb(Color(1, 1, 1, 0.05), 18, Color(0, 0, 0, 0), 0, 12))
+	v.add_child(eq_detail)
+
+func show_equip() -> void:
+	hide_all()
+	equip_scr.visible = true
+	_fade_in(equip_scr, 0.2)
+	_refresh_equip()
+	_show_nav("equip")
+
+func _item_tile(it: Dictionary, d := 84, on_click := Callable()) -> Button:
+	var r: int = int(it.get("r", 0))
+	var rc: Color = GameData.RARITIES[r][1] if not it.is_empty() else Color(1, 1, 1, 0.2)
+	var b := Button.new()
+	b.custom_minimum_size = Vector2(d, d)
+	var st := sb(Color(rc.r * 0.15, rc.g * 0.15, rc.b * 0.2, 0.95) if not it.is_empty() else Color(1, 1, 1, 0.03), 16, rc, 2, 0)
+	b.add_theme_stylebox_override("normal", st)
+	var hv := st.duplicate()
+	hv.border_color = rc.lightened(0.4)
+	hv.set_border_width_all(3)
+	b.add_theme_stylebox_override("hover", hv)
+	b.add_theme_stylebox_override("pressed", hv)
+	b.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
+	if not it.is_empty():
+		var ic := SkillIcon.new("slot_" + it.slot, rc.lightened(0.15))
+		ic.position = Vector2(d * 0.18, d * 0.18)
+		ic.size = Vector2(d * 0.64, d * 0.64)
+		b.add_child(ic)
+		if GameData.equipped.get(it.slot, -1) == int(it.id):
+			var e := lbl("E", 14, Color(0.6, 1, 0.6), true)
+			e.position = Vector2(6, 2)
+			b.add_child(e)
+	if on_click.is_valid():
+		b.pressed.connect(on_click)
+	return b
+
+func _refresh_equip() -> void:
+	_clear(eq_slots)
+	for s2 in GameData.SLOTS:
+		var it := GameData.find_item(int(GameData.equipped.get(s2, -1)))
+		var box := vbox(4)
+		var tile := _item_tile(it, 92, _select_item.bind(int(it.get("id", -1))))
+		if it.is_empty():
+			var ic := SkillIcon.new("slot_" + s2, Color(1, 1, 1, 0.15))
+			ic.position = Vector2(20, 20)
+			ic.size = Vector2(52, 52)
+			tile.add_child(ic)
+		box.add_child(tile)
+		box.add_child(center(lbl(GameData.SLOT_NAMES[s2] if it.is_empty() else it.name, 12, GREY)))
+		box.custom_minimum_size.x = 150
+		eq_slots.add_child(box)
+	var g := GameData.gear_stats()
+	eq_total.text = ("Bonus del equipo:\n" + GameData.stats_text(g).replace("\n", "   ")) if not g.is_empty() else "Abre cofres en la Tienda para conseguir equipo"
+	_clear(eq_grid)
+	var items := GameData.inventory.duplicate()
+	items.sort_custom(func(a, b): return int(a.r) > int(b.r))
+	for it in items:
+		eq_grid.add_child(_item_tile(it, 84, _select_item.bind(int(it.id))))
+	_refresh_detail()
+
+func _select_item(id: int) -> void:
+	eq_sel = id
+	_refresh_detail()
+
+func _refresh_detail() -> void:
+	_clear(eq_detail)
+	var it := GameData.find_item(eq_sel)
+	var h := hbox(14)
+	h.mouse_filter = Control.MOUSE_FILTER_PASS
+	eq_detail.add_child(h)
+	if it.is_empty():
+		h.add_child(lbl("Toca un objeto para ver sus detalles", 15, GREY))
+		return
+	var rc: Color = GameData.RARITIES[int(it.r)][1]
+	var tv := vbox(2)
+	tv.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	tv.add_child(lbl(it.name + "   (" + GameData.RARITIES[int(it.r)][0] + ")", 19, rc, true))
+	tv.add_child(lbl(GameData.stats_text(it.stats).replace("\n", "    "), 14, GREY))
+	h.add_child(tv)
+	var equipped_now: bool = GameData.equipped.get(it.slot, -1) == int(it.id)
+	var eb := btn("Equipado" if equipped_now else "Equipar", func():
+		GameData.equip(int(it.id))
+		_refresh_equip(), 16, true)
+	eb.disabled = equipped_now
+	h.add_child(eb)
+	h.add_child(btn("Vender (+%d)" % GameData.SELL[int(it.r)], func():
+		GameData.sell(int(it.id))
+		eq_sel = -1
+		_refresh_equip(), 16))

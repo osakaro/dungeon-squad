@@ -54,6 +54,15 @@ func setup(m, k: String) -> void:
 	dmg *= 1.0 + GameData.talent_value("t_fuerza") / 100.0
 	crit += GameData.talent_value("t_critico") / 100.0
 	armor = GameData.talent_value("t_armadura") / 100.0
+	# equipo
+	var g := GameData.gear_stats()
+	max_hp *= 1.0 + g.get("hp", 0.0) / 100.0
+	hp = max_hp
+	dmg *= 1.0 + g.get("dmg", 0.0) / 100.0
+	crit += g.get("crit", 0.0) / 100.0
+	rate *= 1.0 + g.get("rate", 0.0) / 100.0
+	speed *= 1.0 + g.get("speed", 0.0) / 100.0
+	armor = min(0.7, armor + g.get("armor", 0.0) / 100.0)
 	if k == "nigromante":
 		lifesteal = 0.6
 	if k == "asesino":
