@@ -153,6 +153,12 @@ var _queue := []
 
 func play_music(kind: String) -> void:
 	_wanted = kind
+	# música pregrabada (tools/render_music.py): carga instantánea y funciona en web/móvil
+	var path := "res://assets/music/%s.ogg" % kind
+	if not _cache.has(kind) and ResourceLoader.exists(path):
+		var st: AudioStreamOggVorbis = load(path)
+		st.loop = true
+		_cache[kind] = st
 	if _cache.has(kind):
 		_start(kind)
 	elif not kind in _queue:
@@ -174,7 +180,7 @@ func _job(k: String) -> void:
 	var w := _make_track(k)
 	call_deferred("_job_done", k, w)
 
-func _job_done(k: String, w: AudioStreamWAV) -> void:
+func _job_done(k: String, w: AudioStream) -> void:
 	_cache[k] = w
 	if _wanted == k:
 		_start(k)

@@ -5,6 +5,12 @@ Versión en **Godot 4** del juego, con personajes 3D animados (KayKit), iluminac
 ![Título](../docs/godot-titulo.png)
 ![Menú](../docs/godot-menu.png)
 
+## 📱 Jugar en el móvil o el navegador
+
+Abre **https://osakaro.github.io/dungeon-squad/play/** (mejor con el móvil en horizontal). Para moverte, arrastra el dedo por la pantalla.
+
+Para actualizar la versión web: en Godot, ve a **Proyecto → Exportar → Web** y exporta a la carpeta `play/` de este repositorio.
+
 ## ▶️ Cómo abrirlo
 
 1. Instala **Godot 4.3 o superior** (la versión estándar, no hace falta la de .NET): https://godotengine.org/download

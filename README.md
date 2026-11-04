@@ -1,5 +1,7 @@
 # ⚔️ DungeonSquad
 
+> 📱 **Juega la versión Godot desde el navegador o el móvil:** https://osakaro.github.io/dungeon-squad/play/
+>
 > 🆕 **Versión Godot 4** con gráficos mejorados en la carpeta [`godot/`](godot/). Consulta [su README](godot/README.md).
 
 ![Godot](docs/godot-jefe.png)
